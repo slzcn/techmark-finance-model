@@ -163,6 +163,7 @@ tr.sub td{color:var(--dim)}
 <div class="qtabs" id="qtabs"></div>
 
 <div class="kpi" id="kpi"></div>
+<div class="note" id="quotaWarn" style="border-left-color:var(--red)"></div>
 
 <div class="grid">
   <div class="card">
@@ -249,6 +250,12 @@ const COST={
  m2:[[250000,16.80,22.18,19.82],[450000,15.40,20.33,18.17],[550000,14.00,18.48,16.52],[625000,11.20,14.78,13.22],[Infinity,9.80,12.94,11.56]],
  m3:[[325000,30.60,40.39,36.11],[540000,28.05,37.03,33.10],[660000,25.50,33.66,30.09],[750000,20.40,26.93,24.07],[Infinity,17.85,23.56,21.06]]
 };
+// P27 纳/尼本地建厂成本结构(中间档全平,只取本地产列): [[上限,本地产成本]]
+const COST27={
+ m1:[[562500,23.52],[675000,22.40],[825000,22.40],[937500,22.40],[Infinity,21.28]],
+ m2:[[250000,10.29],[450000,9.80],[550000,9.80],[625000,9.80],[Infinity,9.31]],
+ m3:[[325000,18.74],[540000,17.85],[660000,17.85],[750000,17.85],[Infinity,16.96]]
+};
 const HISTPRICE={m1:40,m2:26,m3:32};
 const INFLAT=[0,0.05,0.0125];
 const NATNAME=['尤菲亚','纳达卡','尼赫鲁'];
@@ -298,11 +305,17 @@ function resolveParam(pk){
 }
 
 function unitCostBase(pk,site,destNi,qty){
- // 产地site生产,运到destNi市场. 本地产(site==destNi)用尤菲亚列(基础成本,无跨国关税)
+ // 产地site生产,运到destNi市场
  const t=COST[pk]; let row=t[t.length-1];
  for(const r of t){ if(qty<r[0]){row=r;break;} }
- if(site===destNi) return row[1]; // 本地产=基础成本
- // 跨国: 从site运到destNi. 教材表是"尤菲亚产运X",近似用目标市场列
+ // 本地产(site==destNi): 尤菲亚用主表基础列; 纳/尼本地建厂用 P27 本地结构(中间档全平)
+ if(site===destNi){
+  if(site===0) return row[1]; // 尤菲亚本地=主表基础价
+  const t2=COST27[pk]; let row2=t2[t2.length-1];
+  for(const r of t2){ if(qty<r[0]){row2=r;break;} }
+  return row2[1]; // P27 本地产列(纳/尼建厂)
+ }
+ // 跨国运输: 从site运到destNi. 主表列按目标市场取运输加价
  return row[1+destNi];
 }
 
@@ -313,21 +326,30 @@ function matchScore(pk,ni,q){
  const id=IDEAL[pk][q][ni], p=Q[q].prod[pk];
  const dt=(p.tq!=null?p.tq:PARAM_INIT[pk][0])-id[0];
  const dr=(p.rs!=null?p.rs:PARAM_INIT[pk][1])-id[1];
- return Math.max(0,1-Math.sqrt(dt*dt+dr*dr)/2.8);
+ let dist=Math.sqrt(dt*dt+dr*dr);
+ // 广告领先者效应(P16): 高广告投入把"理想产品"往自己拉,等效于缩短参数距离
+ if(pk!=='m3' && ni<3){
+  const ad=(p.nat[ni]&&p.nat[ni].ad)||0;
+  dist=dist*(1-0.20*Math.min(1,ad/450)); // 满额广告$450K最多拉近20%距离
+ }
+ return Math.max(0,1-dist/2.8);
 }
 
-// ===== 核心计算: 算到第 upto 季 (累积) =====
-function calcQ(q, carryFixed, carryEquity, prevReps){
+// ===== 核心计算: 算第 q 季 (carryCash=上季期末现金) =====
+function calcQ(q, carryFixed, carryEquity, prevReps, carryCash){
  // 先结算研发(累积)
  for(const pk of PKEY) resolveParam(pk);
  let rev=0,cogsSold=0,invVal=0,promo=0,rd=0,repCost=0,trainCost=0,moveCost=0,installCapex=0;
  const detail=[];
  let repsByNat=[0,0,0];
+ let quotaWarn=[];
  for(let pi=0;pi<3;pi++){
   const pk=PKEY[pi],p=Q[q].prod[pk];
   rd+=(p.rd||0)*1e6;
+  let prodTotal=0;
   for(let ni=0;ni<3;ni++){
    const x=p.nat[ni]; if(x.qty<=0) continue;
+   prodTotal+=x.qty;
    const ms=matchScore(pk,ni,q),af=adFactor(x.ad,pk),rf=repFactor(x.reps,pk);
    const cap=DEMAND[pk][q][ni];
    const share=Math.min(0.30, ms*af*rf*0.30);
@@ -339,12 +361,12 @@ function calcQ(q, carryFixed, carryEquity, prevReps){
    invVal+=(x.qty-sold)*uc;
    promo+=x.ad*1000;
    repsByNat[ni]+=x.reps;
-   // 迁厂: 非尤菲亚产地=首次安装费(简化:每季每产品每非尤产地算一次开办;首用算安装)
-   if(x.site!==0){ moveCost+=100000; if(q===0||true){} }
+   if(x.site!==0){ moveCost+=100000; } // 每次换厂开办费$100K(计损益)
    detail.push({pk:PNAME[pi],nat:NATNAME[ni],ms,sold,potential,qty:x.qty,uc,share,
      rev:sold*x.price, site:NATNAME[x.site], ok:p._ok});
   }
-  // 安装费: 只在首次向该产地下单时(简化:本季有非尤产地投放就记一次$1M,累积仅一次由carryFixed处理)
+  // 产量配额: 单产品单季总量≤2,997,000
+  if(prodTotal>2997000) quotaWarn.push(PNAME[pi]+'总产量'+(prodTotal/1000).toFixed(0)+'K超额(≤2997K)');
  }
  // 销售代表薪资: 各国实际投放销代 × $150K
  const totalReps=repsByNat.reduce((a,b)=>a+b,0);
@@ -354,56 +376,67 @@ function calcQ(q, carryFixed, carryEquity, prevReps){
  if(totalReps>prevTot) trainCost=(totalReps-prevTot)*50000;
  const invFee=invVal*0.10;
  const mgmt=Q[q].members*200000;
- // 固定资产随迁厂安装增加, 折旧=固定资产/40
  const fixed=carryFixed;
  const dep=fixed/40;
  const opCost=cogsSold+invFee+promo+rd+repCost+trainCost+mgmt+dep+moveCost;
  const ebit=rev-opCost;
- // 融资: 期初现金 + ebit, 现金<5M自动借, >10M自动短投
- let cashPre=START_CASH+ebit; // 简化:每季从基准现金起算(教学近似)
+ // === 资金链: 现金从上季结转 ===
+ // 本季运营现金流近似=ebit(含非现金折旧回加,应收/库存占用相互近似抵消为教学简化)
+ const cashOp=ebit+dep; // 折旧是非现金支出,加回
+ let cashPre=carryCash+cashOp;
  let debt=0, shortInv=0, interest=0, invIncome=0;
- // 债务上限允许借款; 现金不足强制借到5M
+ // 主动信用额度借款(debtCap): 先拉满上限当作可用资金池
+ const cap=Q[q].debtCap*1e6;
+ // 现金<$5M 自动借足, 但不超信用额度+强制缺口
  if(cashPre<5000000){ debt=5000000-cashPre; }
- debt=Math.min(debt+ (Q[q].debtCap*1e6>debt? 0:0), Math.max(debt, 0));
- if(Q[q].debtCap*1e6 < debt){ /* 缺口超上限:发股票补, 这里简化允许 */ }
- interest=debt*0.0625; // 季利率
- if(cashPre>10000000){ shortInv=cashPre-10000000; invIncome=shortInv*0.02; } // 季8%/4=2%
+ // 如果设了信用额度且现金充裕,也可主动保留额度借款(教学:假设用满额度做杂项投入=负债取cap)
+ debt=Math.max(debt, cap>0&&cashPre<5000000?Math.min(cap,5000000-cashPre):debt);
+ if(cashPre<5000000 && (5000000-cashPre)>cap){ debt=5000000-cashPre; } // 缺口超额度:发股票补(简化允许,全额计息)
+ interest=debt*0.0625; // 季利率25%/4
+ let cashAfterDebt=cashPre+debt;
+ if(cashAfterDebt>10000000){ shortInv=cashAfterDebt-10000000; invIncome=shortInv*0.02; } // 季8%/4=2%
  const pretax=ebit-interest+invIncome;
  const tax=pretax>0?pretax*0.38:0;
  const net=pretax-tax;
+ // 期末现金(结转下季): 保留$5M-$10M区间, 超额部分已转短投
+ const cashEnd=Math.max(5000000,Math.min(10000000,cashAfterDebt))+(net-ebit); // 税后调整近似
  return {rev,cogsSold,invVal,invFee,promo,rd,repCost,trainCost,mgmt,dep,moveCost,
-   ebit,debt,interest,shortInv,invIncome,pretax,tax,net,totalReps,repsByNat,detail,fixed};
+   ebit,debt,interest,shortInv,invIncome,pretax,tax,net,totalReps,repsByNat,detail,fixed,
+   cashEnd:Math.max(0,cashEnd),quotaWarn};
 }
 
-// 从第1季连续算到cur季, 累积权益/固定资产
+// 从第1季连续算到cur季, 累积权益/固定资产/现金
 function calcCumulative(){
  let equity=START_EQUITY, fixed=START_FIXED, prevReps=INIT_REPS.reduce((a,b)=>a+b,0);
+ let cash=START_CASH;
  let installedNat={}; // 已安装过的(产品,产地)
  const perQ=[];
  for(let q=0;q<=cur;q++){
-  // 计算本季新增安装费(首次向纳/尼下单每产品$1M)
+  // 本季新增安装费(首次向纳/尼下单每产品$1M)
   let newInstall=0;
   for(const pk of PKEY){ for(let ni=0;ni<3;ni++){
     const x=Q[q].prod[pk].nat[ni];
     if(x.qty>0 && x.site!==0){ const key=pk+'@'+x.site; if(!installedNat[key]){installedNat[key]=1; newInstall+=1000000;} }
   }}
   fixed+=newInstall;
-  const r=calcQ(q, fixed, equity, prevReps);
+  cash-=newInstall; // 安装费耗现金(转化为固定资产)
+  const r=calcQ(q, fixed, equity, prevReps, cash);
   r.newInstall=newInstall;
   equity+=r.net; // 留存收益累积
+  cash=r.cashEnd; // 现金结转下季
   prevReps=r.totalReps||prevReps;
   perQ.push(r);
  }
  const r=perQ[cur];
- const totalAsset=equity + (fixed-START_FIXED) + 0; // 近似
- const ta=START_EQUITY + perQ.reduce((a,b,i)=>i<=cur?a:a,0); // 用权益近似总资产变化
- const totalAssetApprox=fixed + START_CASH + Math.max(0,r.shortInv) + r.invVal; // 资产=固定+现金+短投+存货
+ // 总资产 = 固定资产净值(含累计折旧) + 现金 + 短投 + 存货
+ let accDep=perQ.reduce((a,b)=>a+b.dep,0);
+ const fixedNet=Math.max(0,fixed-accDep);
+ const totalAsset=fixedNet + r.cashEnd + Math.max(0,r.shortInv) + r.invVal;
  const eq=equity;
- const roa=r.net/totalAssetApprox, roe=r.net/eq;
- const netMargin=r.rev>0?r.net/r.rev:0, assetTurn=r.rev/totalAssetApprox, lever=totalAssetApprox/eq;
- // 累计净利(扭亏进度)
+ const roa=r.net/totalAsset, roe=r.net/eq;
+ const netMargin=r.rev>0?r.net/r.rev:0, assetTurn=r.rev/totalAsset, lever=totalAsset/eq;
  const cumNet=perQ.reduce((a,b)=>a+b.net,0);
- return {r,perQ,equity:eq,totalAsset:totalAssetApprox,roa,roe,netMargin,assetTurn,lever,cumNet,fixed};
+ return {r,perQ,equity:eq,totalAsset,roa,roe,netMargin,assetTurn,lever,cumNet,fixed:fixedNet,cash:r.cashEnd};
 }
 
 // ===== 渲染 =====
@@ -480,6 +513,9 @@ function renderResults(){
   <div class="kpibox"><div class="lbl">ROA</div><div class="val ${r.net>=0?'pos':'neg'}">${pct(C.roa)}</div><div class="sub">利润/总资产</div></div>
   <div class="kpibox"><div class="lbl">销售收入</div><div class="val" style="color:var(--blue)">${fmtM(r.rev)}</div><div class="sub">本季</div></div>
   <div class="kpibox"><div class="lbl">累计扭亏</div><div class="val ${cumClass}">${fmtM(C.cumNet)}</div><div class="sub">第1→${cur+1}季累计净利</div></div>`;
+ // 产量配额警告
+ const qwEl=document.getElementById('quotaWarn');
+ if(qwEl) qwEl.innerHTML=(r.quotaWarn&&r.quotaWarn.length)?`⚠️ 产量超额: ${r.quotaWarn.join('；')}（教材硬限 单产品单季≤2997K）`:'';
  // 匹配度
  let mh='';
  for(let ni=0;ni<3;ni++){
@@ -512,10 +548,11 @@ function renderResults(){
   </tbody>`;
  document.getElementById('bs').innerHTML=`
   <thead><tr><th>科目</th><th>期末</th><th>杜邦拆解</th><th>值</th></tr></thead><tbody>
-  <tr><td>总资产(固定+现金+短投+存货)</td><td>${fmt(C.totalAsset)}</td><td>净利率</td><td>${pct(C.netMargin)}</td></tr>
-  <tr><td>股东权益(含累计留存)</td><td>${fmt(C.equity)}</td><td>资产周转</td><td>${C.assetTurn.toFixed(3)}</td></tr>
-  <tr><td>债务</td><td>${fmt(r.debt)}</td><td>权益乘数</td><td>${C.lever.toFixed(3)}</td></tr>
-  <tr><td>存货价值</td><td>${fmt(r.invVal)}</td><td>固定资产</td><td>${fmt(C.fixed)}</td></tr>
+  <tr><td>总资产(固定净值+现金+短投+存货)</td><td>${fmt(C.totalAsset)}</td><td>净利率</td><td>${pct(C.netMargin)}</td></tr>
+  <tr><td>期末现金(结转下季,$5M-$10M)</td><td>${fmt(C.cash)}</td><td>资产周转</td><td>${C.assetTurn.toFixed(3)}</td></tr>
+  <tr><td>股东权益(含累计留存)</td><td>${fmt(C.equity)}</td><td>权益乘数</td><td>${C.lever.toFixed(3)}</td></tr>
+  <tr><td>债务(本季)</td><td>${fmt(r.debt)}</td><td>固定资产净值</td><td>${fmt(C.fixed)}</td></tr>
+  <tr><td>存货价值</td><td>${fmt(r.invVal)}</td><td>短投</td><td>${fmt(Math.max(0,r.shortInv))}</td></tr>
   <tr class="total"><td>ROE</td><td class="${C.roe>=0?'pos':'neg'}">${pct(C.roe)}</td>
    <td>=净利率×周转×乘数</td><td class="${C.roe>=0?'pos':'neg'}">${pct(C.netMargin*C.assetTurn*C.lever)}</td></tr>
   </tbody>`;
