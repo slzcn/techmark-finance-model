@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>TechMark 财务预测模型</title>
+<style>
+:root{
+  --bg:#0f1420;--panel:#1a2234;--panel2:#212b40;--line:#2d3a52;
+  --txt:#e6ecf5;--dim:#8a97ad;--accent:#4fd1c5;--accent2:#f6ad55;
+  --red:#fc8181;--green:#68d391;--blue:#63b3ed;
+  --m1:#e63946;--m2:#2a9d8f;--m3:#f4a261;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;
+  background:linear-gradient(160deg,#0f1420,#141b2c);color:var(--txt);
+  line-height:1.5;padding:18px;min-height:100vh}
+.wrap{max-width:1320px;margin:0 auto}
+header{text-align:center;margin-bottom:20px}
+header h1{font-size:26px;font-weight:800;letter-spacing:.5px;
+  background:linear-gradient(90deg,#4fd1c5,#63b3ed,#f6ad55);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+header p{color:var(--dim);font-size:13px;margin-top:6px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  padding:16px 18px;box-shadow:0 6px 24px rgba(0,0,0,.25)}
+.card h2{font-size:15px;margin-bottom:12px;display:flex;align-items:center;gap:8px;
+  color:var(--accent);font-weight:700}
+.card h2 .badge{font-size:11px;background:var(--panel2);color:var(--dim);
+  padding:2px 8px;border-radius:6px;font-weight:500}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:center;
+  margin-bottom:18px}
+.toolbar select,.toolbar button{background:var(--panel2);color:var(--txt);
+  border:1px solid var(--line);border-radius:9px;padding:9px 14px;font-size:13px;cursor:pointer;
+  font-family:inherit}
+.toolbar button{background:linear-gradient(90deg,#4fd1c5,#38a89d);color:#06221f;font-weight:700;border:none}
+.toolbar button.ghost{background:var(--panel2);color:var(--txt);font-weight:500}
+.toolbar button:hover{filter:brightness(1.08)}
+.mtabs{display:flex;gap:6px;margin-bottom:14px}
+.mtab{flex:1;text-align:center;padding:8px;border-radius:9px;background:var(--panel2);
+  cursor:pointer;font-size:13px;font-weight:600;border:2px solid transparent;transition:.15s}
+.mtab.m1.on{border-color:var(--m1);color:var(--m1)}
+.mtab.m2.on{border-color:var(--m2);color:var(--m2)}
+.mtab.m3.on{border-color:var(--m3);color:var(--m3)}
+.ctrl{margin-bottom:14px}
+.ctrl label{display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px}
+.ctrl label span:last-child{color:var(--accent2);font-weight:700;font-variant-numeric:tabular-nums}
+.ctrl input[type=range]{width:100%;accent-color:var(--accent);height:5px}
+.ctrl .hint{font-size:11px;color:var(--dim);margin-top:3px}
+.natgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.natbox{background:var(--panel2);border-radius:10px;padding:12px}
+.natbox h3{font-size:13px;margin-bottom:10px;text-align:center;color:var(--blue)}
+.natbox .ctrl{margin-bottom:10px}
+.natbox .ctrl label{font-size:11.5px}
+.kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.kpibox{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:14px;text-align:center}
+.kpibox .lbl{font-size:12px;color:var(--dim);margin-bottom:6px}
+.kpibox .val{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+.kpibox .sub{font-size:11px;color:var(--dim);margin-top:3px}
+table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right}
+th:first-child,td:first-child{text-align:left}
+thead th{color:var(--dim);font-weight:600;font-size:12px}
+tr.total td{font-weight:800;border-top:2px solid var(--accent);border-bottom:none}
+tr.sub td{color:var(--dim)}
+.pos{color:var(--green)}.neg{color:var(--red)}
+.full{grid-column:1/-1}
+.barwrap{margin-top:6px}
+.bar{height:22px;border-radius:6px;background:var(--panel2);overflow:hidden;position:relative;margin-bottom:8px}
+.bar .fill{height:100%;border-radius:6px;transition:.4s}
+.bar .txt{position:absolute;left:8px;top:0;line-height:22px;font-size:12px;font-weight:600}
+.note{font-size:12px;color:var(--dim);margin-top:10px;padding:10px;background:var(--panel2);border-radius:8px;border-left:3px solid var(--accent2)}
+@media(max-width:900px){.grid{grid-template-columns:1fr}.kpi{grid-template-columns:repeat(2,1fr)}.natgrid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>TechMark 财务预测模型</h1>
+  <p>基于培训教材 P1-P28 全套规则 · 三国(尤菲亚/纳达卡/尼赫鲁) × 三产品(磁1/磁2/磁3) · 调参即算损益·ROE·现金流</p>
+</header>
+
+<div class="toolbar">
+  <span style="font-size:13px;color:var(--dim)">季度理想参数：</span>
+  <select id="quarter">
+    <option value="0">第1季</option><option value="1">第2季</option>
+    <option value="2">第3季</option><option value="3" selected>第4季</option>
+  </select>
+  <button class="ghost" onclick="applyPreset('best')">📈 一键最优组合</button>
+  <button class="ghost" onclick="applyPreset('reset')">↺ 重置</button>
+  <button onclick="scrollTo(0,document.body.scrollHeight)">⬇ 看结果</button>
+</div>
+
+<div class="kpi" id="kpi"></div>
+
+<div class="grid">
+  <!-- 产品决策面板 -->
+  <div class="card">
+    <h2>🎛️ 产品决策 <span class="badge" id="curProd">磁2</span></h2>
+    <div class="mtabs">
+      <div class="mtab m1" data-p="0" onclick="selProd(0)">磁1</div>
+      <div class="mtab m2 on" data-p="1" onclick="selProd(1)">磁2</div>
+      <div class="mtab m3" data-p="2" onclick="selProd(2)">磁3</div>
+    </div>
+    <div id="prodCtrls"></div>
+  </div>
+
+  <!-- 三国投放 -->
+  <div class="card">
+    <h2>🌏 三国投放（当前产品）</h2>
+    <div class="natgrid" id="natCtrls"></div>
+    <div class="note" id="prodNote"></div>
+  </div>
+
+  <!-- 全局财务 -->
+  <div class="card">
+    <h2>💰 全局财务决策</h2>
+    <div id="finCtrls"></div>
+  </div>
+
+  <!-- 参数匹配度 -->
+  <div class="card">
+    <h2>🎯 研发参数匹配度 <span class="badge">越接近理想=销量越高</span></h2>
+    <div id="matchView"></div>
+  </div>
+
+  <!-- 损益表 -->
+  <div class="card full">
+    <h2>📊 季度损益表（$EU）</h2>
+    <table id="pnl"></table>
+  </div>
+
+  <!-- 资产/ROE -->
+  <div class="card full">
+    <h2>🏦 资产负债 & ROE 杜邦拆解</h2>
+    <table id="bs"></table>
+  </div>
+</div>
+
+<div class="note full" style="margin-top:16px">
+⚠️ <b>模型说明</b>：本模型按教材规则实现核心逻辑（成本-产量阶梯、参数匹配度影响销量、通胀汇率、库存费、25%债务利息、38%税、折旧、ROA/ROE）。销量采用「参数匹配度 × 广告系数 × 销售代表系数 × 需求上限」的简化需求模型，用于教学推演，非官方引擎精确复刻。P27/P28 成本表口径待核对，成本计算以 P26 主表为准。
+</div>
+</div>
+
+<script>
+// ===== 教材数据 (P1-P28) =====
+const DEMAND={ // P22 行业需求(箱) [E,L,N] x 4季
+ m1:[[2223000,1200625,1064250],[1515182,1277178,1732485],[1478559,769582,685821],[871590,463475,830711]],
+ m2:[[1163147,494143,917493],[1422813,333956,1219871],[1911212,496564,2126350],[2457062,524899,2657497]],
+ m3:[[3513703,147319,214501],[3861643,168294,215544],[3426611,181457,231389],[3189809,159095,229428]]
+};
+const IDEAL={ // P23-25 理想参数 [torque,resist] per [E,L,N] x 4季
+ m1:[[[4.2,3.9],[4.0,4.3],[4.0,2.2]],[[3.9,3.9],[3.8,4.3],[4.2,2.4]],[[3.6,3.7],[3.6,4.2],[4.3,2.5]],[[3.2,3.6],[3.4,4.1],[4.5,2.7]]],
+ m2:[[[2.5,2.4],[2.6,2.6],[3.5,2.7]],[[2.6,2.5],[2.5,2.6],[3.7,2.7]],[[2.6,2.5],[2.5,2.7],[3.8,2.8]],[[2.7,2.6],[2.5,2.7],[4.2,2.9]]],
+ m3:[[[1.9,3.5],[1.1,1.5],[4.4,1.5]],[[2.2,3.5],[1.2,1.5],[4.2,1.5]],[[2.6,3.5],[1.3,1.5],[3.9,1.6]],[[2.9,3.5],[1.4,1.5],[3.7,1.7]]]
+};
+// P26 成本阶梯: [[上限,尤菲亚,运纳,运尼],...] 最后档上限=Infinity
+const COST={
+ m1:[[562500,38.40,50.69,45.31],[675000,35.20,46.46,41.54],[825000,32.00,42.24,37.76],[937500,25.60,33.79,30.21],[Infinity,22.40,29.57,26.43]],
+ m2:[[250000,16.80,22.18,19.82],[450000,15.40,20.33,18.17],[550000,14.00,18.48,16.52],[625000,11.20,14.78,13.22],[Infinity,9.80,12.94,11.56]],
+ m3:[[325000,30.60,40.39,36.11],[540000,28.05,37.03,33.10],[660000,25.50,33.66,30.09],[750000,20.40,26.93,24.07],[Infinity,17.85,23.56,21.06]]
+};
+const HISTPRICE={m1:40,m2:26,m3:32};
+const INFLAT=[0,0.05,0.0125]; // E,L,N 每季
+const NATNAME=['尤菲亚','纳达卡','尼赫鲁'];
+const PKEY=['m1','m2','m3'],PNAME=['磁1','磁2','磁3'];
+const PCOLOR=['#e63946','#2a9d8f','#f4a261'];
+
+// ===== 决策状态 =====
+let S={
+ quarter:3, curP:1,
+ prod:{ // 每产品: 研发扭矩/电阻 + 各国{价格,产量,销代,广告}
+  m1:{tq:3.2,rs:3.6,nat:[{price:40,qty:400000,reps:12,ad:450},{price:40,qty:0,reps:7,ad:125},{price:40,qty:0,reps:10,ad:450}]},
+  m2:{tq:2.7,rs:2.6,nat:[{price:26,qty:600000,reps:0,ad:50},{price:26,qty:0,reps:0,ad:25},{price:26,qty:0,reps:0,ad:50}]},
+  m3:{tq:2.9,rs:3.5,nat:[{price:32,qty:700000,reps:0,ad:0},{price:32,qty:0,reps:0,ad:0},{price:32,qty:0,reps:0,ad:0}]}
+ },
+ debtCap:0, rdBudget:{m1:0,m2:1.1,m3:0} // 研发预算(百万$)
+};
+const START_ASSET=30000000, START_CASH=5000000, START_EQUITY=30000000, START_FIXED=25000000;
+
+// ===== 计算引擎 =====
+function unitCost(pk,ni,qty){
+ const t=COST[pk]; for(const row of t){ if(qty<row[0]) return row[1+ni]; }
+ return t[t.length-1][1+ni];
+}
+// 参数匹配度: 距离越近越好, 满分1
+function matchScore(pk,ni){
+ const q=S.quarter, id=IDEAL[pk][q][ni], p=S.prod[pk];
+ const dt=p.tq-id[0], dr=p.rs-id[1];
+ const dist=Math.sqrt(dt*dt+dr*dr);
+ return Math.max(0,1-dist/2.8); // 距离2.8以上=0分
+}
+function adFactor(ad,pk){ if(pk==='m3')return 1; return 0.6+0.4*Math.min(1,ad/450);}
+function repFactor(reps){ return 0.4+0.6*Math.min(1,reps/12);}
+
+function calc(){
+ let rev=0,cogs=0,inv=0,promo=0,rd=0,mgmt=0,reps_total=0;
+ const detail=[];
+ for(let pi=0;pi<3;pi++){
+  const pk=PKEY[pi],p=S.prod[pk];
+  for(let ni=0;ni<3;ni++){
+   const nd=p.nat[ni]; if(nd.qty<=0){continue;}
+   const ms=matchScore(pk,ni), af=adFactor(nd.ad,pk), rf=repFactor(nd.reps);
+   const demandCap=DEMAND[pk][S.quarter][ni];
+   // 潜在销量 = 需求 * 匹配 * 广告 * 销代 (占行业份额,封顶25%)
+   const share=Math.min(0.30, ms*af*rf*0.30);
+   const potential=Math.floor(demandCap*share);
+   const sold=Math.min(nd.qty, potential);
+   const uc=unitCost(pk,ni,nd.qty)*(1+INFLAT[ni]*S.quarter);
+   const unsold=nd.qty-sold;
+   rev+=sold*nd.price;
+   cogs+=nd.qty*uc; // 生产全部计成本(未售转库存)
+   inv+=unsold*uc;
+   promo+=nd.ad*1000;
+   reps_total+=nd.reps;
+   detail.push({pk,ni,ms,sold,potential,qty:nd.qty,uc,rev:sold*nd.price});
+  }
+  rd+=(S.rdBudget[pk]||0)*1000000;
+ }
+ // 库存费 = 期末库存价值 10%
+ const invFee=inv*0.10;
+ // 销售代表薪资
+ const repCost=reps_total*150000;
+ // 管理费(假设3组员)
+ mgmt=200000*3;
+ // 折旧
+ const dep=START_FIXED/40;
+ // 息税前
+ const opCost=cogs-inv+invFee+promo+rd+repCost+mgmt+dep; // 已售成本=cogs-inv
+ const ebit=rev-opCost;
+ // 融资:现金缺口
+ let cash=START_CASH+ebit; let debt=0,interest=0;
+ if(cash<5000000){ debt=5000000-cash; }
+ if(S.debtCap*1000000>debt) debt=Math.max(debt, 0); // 用户设的上限只是允许,不强制借
+ interest=debt*0.0625;
+ const pretax=ebit-interest;
+ const tax=pretax>0?pretax*0.38:0;
+ const netProfit=pretax-tax;
+ const totalAsset=START_ASSET+netProfit;
+ const equity=START_EQUITY+netProfit;
+ const roa=netProfit/totalAsset, roe=netProfit/equity;
+ const netMargin=rev>0?netProfit/rev:0, assetTurn=rev/totalAsset, lever=totalAsset/equity;
+ return {rev,cogs,inv,invFee,promo,rd,repCost,mgmt,dep,ebit,debt,interest,pretax,tax,netProfit,
+   totalAsset,equity,roa,roe,netMargin,assetTurn,lever,reps_total,detail,soldCOGS:cogs-inv};
+}
+
+// ===== 渲染 =====
+function fmt(n){return '$'+Math.round(n).toLocaleString();}
+function fmtM(n){return '$'+(n/1000000).toFixed(2)+'M';}
+function pct(n){return (n*100).toFixed(1)+'%';}
+
+function selProd(i){S.curP=i;document.querySelectorAll('.mtab').forEach(t=>t.classList.toggle('on',+t.dataset.p===i));
+ document.getElementById('curProd').textContent=PNAME[i];renderCtrls();render();}
+
+function renderCtrls(){
+ const pk=PKEY[S.curP],p=S.prod[pk];
+ // 产品级: 研发参数
+ document.getElementById('prodCtrls').innerHTML=`
+  <div class="ctrl"><label>研发-扭矩 TORQUE <span>${p.tq.toFixed(1)}</span></label>
+   <input type="range" min="1" max="5" step="0.1" value="${p.tq}" oninput="setP('tq',this.value)"></div>
+  <div class="ctrl"><label>研发-电阻 RESISTANCE <span>${p.rs.toFixed(1)}</span></label>
+   <input type="range" min="1" max="5" step="0.1" value="${p.rs}" oninput="setP('rs',this.value)"></div>
+  <div class="ctrl"><label>研发预算 <span>$${(S.rdBudget[pk]||0).toFixed(2)}M</span></label>
+   <input type="range" min="0" max="6" step="0.1" value="${S.rdBudget[pk]||0}" oninput="setRD(this.value)">
+   <div class="hint">范围1.0-5.0；满量程大改约需$6M。预算不足研发失败(钱白花)</div></div>`;
+ // 三国投放
+ let h='';
+ for(let ni=0;ni<3;ni++){const nd=p.nat[ni];
+  h+=`<div class="natbox"><h3>${NATNAME[ni]}</h3>
+   <div class="ctrl"><label>定价 <span>$${nd.price}</span></label>
+    <input type="range" min="10" max="60" step="1" value="${nd.price}" oninput="setN(${ni},'price',this.value)"></div>
+   <div class="ctrl"><label>产量 <span>${(nd.qty/1000).toFixed(0)}K</span></label>
+    <input type="range" min="0" max="999000" step="1000" value="${nd.qty}" oninput="setN(${ni},'qty',this.value)"></div>
+   <div class="ctrl"><label>销售代表 <span>${nd.reps}</span></label>
+    <input type="range" min="0" max="20" step="1" value="${nd.reps}" oninput="setN(${ni},'reps',this.value)"></div>
+   ${pk!=='m3'?`<div class="ctrl"><label>广告 <span>$${nd.ad}K</span></label>
+    <input type="range" min="0" max="999" step="5" value="${nd.ad}" oninput="setN(${ni},'ad',this.value)"></div>`:'<div class="hint">磁3无品牌·不打广告</div>'}
+  </div>`;
+ }
+ document.getElementById('natCtrls').innerHTML=h;
+ const notes={m1:'磁1高端品牌型·需求萎缩·广告主战场(尤/尼)·销售时间70%',
+  m2:'磁2成长明星·需求强增(尼最猛)·参数尤纳超稳·毛利率62%最高→核心利润引擎',
+  m3:'磁3通用标准品·仅尤菲亚需求大(300万+)·靠规模压成本·不打广告'};
+ document.getElementById('prodNote').textContent='💡 '+notes[pk];
+ // 全局财务(只渲染一次)
+ document.getElementById('finCtrls').innerHTML=`
+  <div class="ctrl"><label>债务上限(信用额度) <span>$${S.debtCap}M</span></label>
+   <input type="range" min="0" max="30" step="1" value="${S.debtCap}" oninput="S.debtCap=+this.value;render()">
+   <div class="hint">债务年息25%(季6.25%)极贵；现金<$5M时系统自动借足</div></div>
+  <div class="note">固定项已内置：管理费$200K/组员/季(按3人)｜折旧$625K/季(25M/40季)｜所得税38%｜库存费=期末存货10%｜通胀 尤0%/纳5%/尼1.25%累加</div>`;
+}
+function setP(k,v){S.prod[PKEY[S.curP]][k]=+v;renderCtrls();render();}
+function setRD(v){S.rdBudget[PKEY[S.curP]]=+v;renderCtrls();render();}
+function setN(ni,k,v){S.prod[PKEY[S.curP]].nat[ni][k]=+v;renderCtrls();render();}
+
+function render(){
+ const r=calc();
+ // KPI
+ document.getElementById('kpi').innerHTML=`
+  <div class="kpibox"><div class="lbl">净利润</div>
+   <div class="val ${r.netProfit>=0?'pos':'neg'}">${fmtM(r.netProfit)}</div>
+   <div class="sub">税后</div></div>
+  <div class="kpibox"><div class="lbl">ROE(董事会目标)</div>
+   <div class="val ${r.roe>=0?'pos':'neg'}">${pct(r.roe)}</div>
+   <div class="sub">利润/股东权益</div></div>
+  <div class="kpibox"><div class="lbl">ROA</div>
+   <div class="val ${r.roa>=0?'pos':'neg'}">${pct(r.roa)}</div>
+   <div class="sub">利润/总资产</div></div>
+  <div class="kpibox"><div class="lbl">销售收入</div>
+   <div class="val" style="color:var(--blue)">${fmtM(r.rev)}</div>
+   <div class="sub">当季</div></div>`;
+ // 参数匹配度
+ let mh='';
+ for(let ni=0;ni<3;ni++){
+  const pk=PKEY[S.curP], ms=matchScore(pk,ni), id=IDEAL[pk][S.quarter][ni];
+  const col=ms>0.7?'var(--green)':ms>0.4?'var(--accent2)':'var(--red)';
+  mh+=`<div class="barwrap"><div style="font-size:12px;margin-bottom:2px">${NATNAME[ni]}
+    <span style="color:var(--dim)">理想 扭${id[0]}/阻${id[1]}</span></div>
+   <div class="bar"><div class="fill" style="width:${(ms*100).toFixed(0)}%;background:${col}"></div>
+    <div class="txt">匹配度 ${(ms*100).toFixed(0)}%</div></div></div>`;
+ }
+ document.getElementById('matchView').innerHTML=mh;
+ // 损益表
+ document.getElementById('pnl').innerHTML=`
+  <thead><tr><th>项目</th><th>金额</th><th>占收入</th></tr></thead><tbody>
+  <tr><td>销售收入</td><td>${fmt(r.rev)}</td><td>100%</td></tr>
+  <tr class="sub"><td>− 已售商品成本</td><td>${fmt(r.soldCOGS)}</td><td>${pct(r.soldCOGS/(r.rev||1))}</td></tr>
+  <tr class="sub"><td>− 库存费(存货10%)</td><td>${fmt(r.invFee)}</td><td></td></tr>
+  <tr class="sub"><td>− 促销/广告</td><td>${fmt(r.promo)}</td><td></td></tr>
+  <tr class="sub"><td>− 研发</td><td>${fmt(r.rd)}</td><td></td></tr>
+  <tr class="sub"><td>− 销售代表薪资(${r.reps_total}人)</td><td>${fmt(r.repCost)}</td><td></td></tr>
+  <tr class="sub"><td>− 管理费</td><td>${fmt(r.mgmt)}</td><td></td></tr>
+  <tr class="sub"><td>− 折旧</td><td>${fmt(r.dep)}</td><td></td></tr>
+  <tr><td>= 息税前利润 EBIT</td><td class="${r.ebit>=0?'pos':'neg'}">${fmt(r.ebit)}</td><td>${pct(r.ebit/(r.rev||1))}</td></tr>
+  <tr class="sub"><td>− 利息(债务$${(r.debt/1e6).toFixed(1)}M×6.25%)</td><td>${fmt(r.interest)}</td><td></td></tr>
+  <tr class="sub"><td>− 所得税(38%)</td><td>${fmt(r.tax)}</td><td></td></tr>
+  <tr class="total"><td>净利润</td><td class="${r.netProfit>=0?'pos':'neg'}">${fmt(r.netProfit)}</td><td>${pct(r.netMargin)}</td></tr>
+  </tbody>`;
+ // 资产/ROE杜邦
+ document.getElementById('bs').innerHTML=`
+  <thead><tr><th>科目</th><th>期末</th><th>杜邦拆解</th><th>值</th></tr></thead><tbody>
+  <tr><td>总资产</td><td>${fmt(r.totalAsset)}</td><td>净利率(利润/收入)</td><td>${pct(r.netMargin)}</td></tr>
+  <tr><td>股东权益</td><td>${fmt(r.equity)}</td><td>资产周转(收入/资产)</td><td>${r.assetTurn.toFixed(3)}</td></tr>
+  <tr><td>债务</td><td>${fmt(r.debt)}</td><td>权益乘数(资产/权益)</td><td>${r.lever.toFixed(3)}</td></tr>
+  <tr class="total"><td>ROE</td><td class="${r.roe>=0?'pos':'neg'}">${pct(r.roe)}</td>
+   <td>= 净利率×周转×乘数</td><td class="${r.roe>=0?'pos':'neg'}">${pct(r.netMargin*r.assetTurn*r.lever)}</td></tr>
+  </tbody>`;
+}
+
+function applyPreset(t){
+ if(t==='reset'){ location.reload(); return; }
+ if(t==='best'){
+  // 一键最优:主攻磁2(尤+纳一次到位/尼追扭矩),磁3尤菲亚走量,磁1收缩
+  S.quarter=3; document.getElementById('quarter').value=3;
+  S.rdBudget={m1:0,m2:1.2,m3:1.1};
+  S.prod.m2.tq=2.7;S.prod.m2.rs=2.6;
+  S.prod.m2.nat=[{price:26,qty:800000,reps:14,ad:120},{price:24,qty:300000,reps:6,ad:40},{price:52,qty:900000,reps:12,ad:120}];
+  S.prod.m3.tq=2.9;S.prod.m3.rs=3.5;
+  S.prod.m3.nat=[{price:32,qty:900000,reps:8,ad:0},{price:0,qty:0,reps:0,ad:0},{price:0,qty:0,reps:0,ad:0}];
+  S.prod.m1.tq=3.2;S.prod.m1.rs=3.6;
+  S.prod.m1.nat=[{price:42,qty:300000,reps:10,ad:200},{price:0,qty:0,reps:0,ad:0},{price:80,qty:200000,reps:8,ad:200}];
+  selProd(1);
+ }
+}
+document.getElementById('quarter').onchange=e=>{S.quarter=+e.target.value;render();};
+renderCtrls();render();
+</script>
+</body>
+</html>
