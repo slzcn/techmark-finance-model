@@ -54,7 +54,7 @@ header p{color:var(--dim);font-size:clamp(11px,3vw,13px);margin-top:6px}
 .ctrl{margin-bottom:13px}
 .ctrl label{display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px}
 .ctrl label span:last-child{color:var(--accent2);font-weight:700;font-variant-numeric:tabular-nums}
-.ctrl input[type=range]{width:100%;accent-color:var(--accent);height:5px}
+.ctrl input[type=range]{width:100%}
 .ctrl .hint{font-size:11px;color:var(--dim);margin-top:3px}
 .seg{display:flex;gap:5px;margin-top:4px}
 .seg button{flex:1;padding:6px;font-size:11.5px;border-radius:7px;border:1px solid var(--line);
@@ -88,10 +88,29 @@ tr.sub td{color:var(--dim)}
 .flag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:5px;margin-left:6px}
 .flag.ok{background:rgba(104,211,145,.15);color:var(--green)}
 .flag.bad{background:rgba(252,129,129,.15);color:var(--red)}
-.ctrl input[type=range]{-webkit-appearance:none;appearance:none;background:var(--panel2);border-radius:5px}
+/* ===== 拖动条(range)跨浏览器统一样式 ===== */
+.ctrl input[type=range]{-webkit-appearance:none;-moz-appearance:none;appearance:none;
+  width:100%;height:22px;background:transparent;cursor:pointer;margin:0;padding:0;outline:none}
+/* 轨道 - WebKit/Blink(Chrome/Safari/Edge) */
+.ctrl input[type=range]::-webkit-slider-runnable-track{
+  width:100%;height:6px;border-radius:5px;background:var(--panel2);border:1px solid var(--line)}
+/* 轨道 - Firefox */
+.ctrl input[type=range]::-moz-range-track{
+  width:100%;height:6px;border-radius:5px;background:var(--panel2);border:1px solid var(--line)}
+/* 滑块 - WebKit/Blink(必须负 margin 垂直居中到轨道) */
 .ctrl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
-  width:18px;height:18px;border-radius:50%;background:var(--accent);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.4)}
-.ctrl input[type=range]::-moz-range-thumb{width:18px;height:18px;border:none;border-radius:50%;background:var(--accent);cursor:pointer}
+  width:18px;height:18px;margin-top:-7px;border:2px solid #fff;border-radius:50%;
+  background:var(--accent);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+/* 滑块 - Firefox */
+.ctrl input[type=range]::-moz-range-thumb{
+  width:18px;height:18px;border:2px solid #fff;border-radius:50%;
+  background:var(--accent);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+/* 去掉 Firefox 虚线边框、IE/旧Edge 兼容 */
+.ctrl input[type=range]::-moz-focus-outer{border:0}
+.ctrl input[type=range]:focus{outline:none}
+.ctrl input[type=range]::-ms-track{width:100%;height:6px;background:transparent;border-color:transparent;color:transparent}
+.ctrl input[type=range]::-ms-fill-lower,.ctrl input[type=range]::-ms-fill-upper{background:var(--panel2);border-radius:5px}
+.ctrl input[type=range]::-ms-thumb{width:18px;height:18px;border-radius:50%;background:var(--accent);border:2px solid #fff;cursor:pointer}
 
 /* ===== 响应式断点 ===== */
 @media(max-width:1024px){.grid{grid-template-columns:1fr}.natgrid{grid-template-columns:repeat(3,1fr)}}
@@ -103,7 +122,11 @@ tr.sub td{color:var(--dim)}
   .card{padding:14px}
   .card h2{font-size:14px;flex-wrap:wrap}
   th,td{padding:6px 6px;font-size:12px}
-  .ctrl input[type=range]{height:6px}
+  .ctrl input[type=range]{height:26px}
+  .ctrl input[type=range]::-webkit-slider-runnable-track{height:7px}
+  .ctrl input[type=range]::-moz-range-track{height:7px}
+  .ctrl input[type=range]::-webkit-slider-thumb{width:22px;height:22px;margin-top:-8px}
+  .ctrl input[type=range]::-moz-range-thumb{width:22px;height:22px}
 }
 @media(max-width:480px){
   .kpi{grid-template-columns:repeat(2,1fr);gap:6px}
