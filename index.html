@@ -12,16 +12,20 @@
   --m1:#e63946;--m2:#2a9d8f;--m3:#f4a261;
 }
 *{box-sizing:border-box;margin:0;padding:0}
+html,body{max-width:100%;overflow-x:hidden}
+html{-webkit-text-size-adjust:100%}
 body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;
   background:linear-gradient(160deg,#0f1420,#141b2c);color:var(--txt);
-  line-height:1.5;padding:18px;min-height:100vh}
-.wrap{max-width:1340px;margin:0 auto}
+  line-height:1.5;padding:clamp(10px,3vw,20px);min-height:100vh;
+  -webkit-tap-highlight-color:transparent;overflow-x:hidden}
+.wrap{max-width:1340px;margin:0 auto;width:100%}
 header{text-align:center;margin-bottom:16px}
-header h1{font-size:26px;font-weight:800;letter-spacing:.5px;
+header h1{font-size:clamp(20px,5vw,26px);font-weight:800;letter-spacing:.5px;
+  word-break:break-word;
   background:linear-gradient(90deg,#4fd1c5,#63b3ed,#f6ad55);
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-header p{color:var(--dim);font-size:13px;margin-top:6px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+header p{color:var(--dim);font-size:clamp(11px,3vw,13px);margin-top:6px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(12px,2vw,16px)}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
   padding:16px 18px;box-shadow:0 6px 24px rgba(0,0,0,.25)}
 .card h2{font-size:15px;margin-bottom:12px;display:flex;align-items:center;gap:8px;
@@ -37,7 +41,7 @@ header p{color:var(--dim);font-size:13px;margin-top:6px}
 .toolbar button:hover{filter:brightness(1.08)}
 .qtabs{display:flex;gap:6px;justify-content:center;margin-bottom:16px;flex-wrap:wrap}
 .qtab{padding:7px 16px;border-radius:9px;background:var(--panel2);cursor:pointer;
-  font-size:13px;font-weight:600;border:2px solid transparent}
+  font-size:13px;font-weight:600;border:2px solid transparent;white-space:nowrap}
 .qtab.on{border-color:var(--accent);color:var(--accent)}
 .qtab .p{display:block;font-size:10px;color:var(--dim);font-weight:500}
 .qtab.profit .p{color:var(--green)}.qtab.loss .p{color:var(--red)}
@@ -64,9 +68,10 @@ header p{color:var(--dim);font-size:13px;margin-top:6px}
 .kpi{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
 .kpibox{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center}
 .kpibox .lbl{font-size:11.5px;color:var(--dim);margin-bottom:5px}
-.kpibox .val{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums}
+.kpibox .val{font-size:clamp(15px,4vw,19px);font-weight:800;font-variant-numeric:tabular-nums}
 .kpibox .sub{font-size:10.5px;color:var(--dim);margin-top:3px}
-table{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+.tablewrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums;min-width:0}
 th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right}
 th:first-child,td:first-child{text-align:left}
 thead th{color:var(--dim);font-weight:600;font-size:11.5px}
@@ -83,7 +88,55 @@ tr.sub td{color:var(--dim)}
 .flag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:5px;margin-left:6px}
 .flag.ok{background:rgba(104,211,145,.15);color:var(--green)}
 .flag.bad{background:rgba(252,129,129,.15);color:var(--red)}
-@media(max-width:900px){.grid{grid-template-columns:1fr}.kpi{grid-template-columns:repeat(2,1fr)}.natgrid{grid-template-columns:1fr}}
+.ctrl input[type=range]{-webkit-appearance:none;appearance:none;background:var(--panel2);border-radius:5px}
+.ctrl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+  width:18px;height:18px;border-radius:50%;background:var(--accent);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.ctrl input[type=range]::-moz-range-thumb{width:18px;height:18px;border:none;border-radius:50%;background:var(--accent);cursor:pointer}
+
+/* ===== 响应式断点 ===== */
+@media(max-width:1024px){.grid{grid-template-columns:1fr}.natgrid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:768px){
+  .kpi{grid-template-columns:repeat(3,1fr);gap:8px}
+  .kpibox{padding:10px 8px;min-width:0}
+  .kpibox .val{overflow-wrap:anywhere}
+  .natgrid{grid-template-columns:1fr}
+  .card{padding:14px}
+  .card h2{font-size:14px;flex-wrap:wrap}
+  th,td{padding:6px 6px;font-size:12px}
+  .ctrl input[type=range]{height:6px}
+}
+@media(max-width:480px){
+  .kpi{grid-template-columns:repeat(2,1fr);gap:6px}
+  .kpibox{min-width:0;padding:9px 6px}
+  .kpibox .lbl{font-size:10px}
+  .kpibox .val{font-size:14px;overflow-wrap:anywhere}
+  .kpibox .sub{font-size:9.5px}
+  .qtabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;justify-content:flex-start;padding-bottom:4px}
+  .qtab{padding:6px 10px;font-size:12px;flex:0 0 auto}
+  .toolbar button,.toolbar select{padding:8px 10px;font-size:12px}
+  .toolbar span{width:100%;text-align:center}
+  .topnav button{padding:9px 8px;font-size:12px;flex:1 1 auto;min-width:0}
+  .seg{flex-wrap:nowrap;gap:4px}
+  .seg button{font-size:10.5px;padding:7px 2px;min-width:0}
+  th,td{padding:5px 5px;font-size:11.5px}
+  header h1{font-size:18px}
+}
+
+/* ===== 顶部导航 ===== */
+.topnav{display:flex;gap:8px;justify-content:center;margin-bottom:18px;flex-wrap:wrap}
+.topnav button{background:var(--panel2);color:var(--dim);border:1px solid var(--line);
+  border-radius:10px;padding:10px 22px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s}
+.topnav button.on{background:linear-gradient(90deg,#4fd1c5,#38a89d);color:#06221f;border-color:transparent}
+.topnav button:hover{filter:brightness(1.1)}
+.topnav button{-webkit-tap-highlight-color:transparent}
+.page{display:none}.page.on{display:block}
+.imgcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;
+  box-shadow:0 6px 24px rgba(0,0,0,.25);text-align:center}
+.imgcard h2{font-size:17px;color:var(--accent);margin-bottom:6px}
+.imgcard p{color:var(--dim);font-size:13px;margin-bottom:14px}
+.imgcard img{max-width:100%;border-radius:10px;background:#fff;box-shadow:0 4px 16px rgba(0,0,0,.3)}
+.imgcard .dl{display:inline-block;margin-top:14px;background:var(--panel2);color:var(--accent);
+  text-decoration:none;padding:8px 18px;border-radius:8px;font-size:13px;border:1px solid var(--line)}
 </style>
 </head>
 <body>
@@ -92,6 +145,12 @@ tr.sub td{color:var(--dim)}
   <h1>TechMark 财务预测模型 v2</h1>
   <p>严格实现 P1-P28 全套规则 · 三国×三产品 · 多季度连续推演 · 迁厂/研发/融资/库存/税务全链路</p>
 </header>
+<div class="topnav">
+  <button class="on" onclick="showPage('model',this)">📊 交互模型</button>
+  <button onclick="showPage('drift',this)">🎯 参数漂移图</button>
+  <button onclick="showPage('cheat',this)">📋 速查表</button>
+</div>
+<div id="page-model" class="page on">
 
 <div class="toolbar">
   <button class="primary" onclick="applyPreset('best')">📈 一键最优打法</button>
@@ -134,17 +193,17 @@ tr.sub td{color:var(--dim)}
 
   <div class="card full">
     <h2>📊 季度损益表（$EU）<span class="badge" id="pnlQ">第4季</span></h2>
-    <table id="pnl"></table>
+    <div class="tablewrap"><table id="pnl"></table></div>
   </div>
 
   <div class="card full">
     <h2>🏦 资产负债 & ROE 杜邦拆解</h2>
-    <table id="bs"></table>
+    <div class="tablewrap"><table id="bs"></table></div>
   </div>
 
   <div class="card full">
     <h2>📈 各产品×市场明细（销量/份额/供货缺口）</h2>
-    <table id="detail"></table>
+    <div class="tablewrap"><table id="detail"></table></div>
   </div>
 </div>
 
@@ -153,6 +212,25 @@ tr.sub td{color:var(--dim)}
 </div>
 </div>
 
+</div><!-- /page-model -->
+
+<div id="page-drift" class="page">
+  <div class="imgcard">
+    <h2>🎯 三国九点参数漂移定位图</h2>
+    <p>磁1/磁2/磁3 × 尤菲亚/纳达卡/尼赫鲁 × 第1-4季 理想参数(扭矩·电阻)的漂移方向。同型号三国方向相反→无法通吃，需按国差异化研发。</p>
+    <img src="drift-map.png" alt="参数漂移定位图">
+    <a class="dl" href="drift-map.png" download>⬇ 下载原图</a>
+  </div>
+</div>
+
+<div id="page-cheat" class="page">
+  <div class="imgcard">
+    <h2>📋 TechMark 速查表合集</h2>
+    <p>三产品毛利、成本阶梯、通胀/汇率/税务/融资等六张核心速查表，一图掌握全部关键参数。</p>
+    <img src="cheatsheet.png" alt="速查表合集">
+    <a class="dl" href="cheatsheet.png" download>⬇ 下载原图</a>
+  </div>
+</div>
 <script>
 // ===== 教材数据 (P1-P28) =====
 const DEMAND={
@@ -492,6 +570,13 @@ function applyPreset(t){
  }
 }
 selProd(1);renderAll();
+
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.getElementById('page-'+id).classList.add('on');
+  document.querySelectorAll('.topnav button').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+}
 </script>
 </body>
 </html>
