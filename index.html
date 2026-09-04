@@ -232,7 +232,7 @@ tr.sub td{color:var(--dim)}
 </div>
 
 <div class="note full" style="margin-top:16px">
-⚠️ <b>模型口径说明</b>：本模型按教材逐条实现——成本-产量阶梯(P26主表)、通胀累加(尤0/纳5%/尼1.25%每季)、汇率、库存费10%、销售代表$150K+新聘培训$50K+解雇成本、管理费$200K/人、折旧2.5%/季、迁厂$1M安装(入固定资产)+$100K开办、债务25%/年单利、短投8%/年、现金$5M-$10M自动借/投、所得税38%、产量配额、研发成功需预算达标(不足则参数不变)、销售时间70/20/10、市场份额双口径。销量采用「参数匹配×广告×销代×销售时间×需求上限」简化需求函数用于教学推演。P27/P28成本口径待核对，成本以P26为准。
+⚠️ <b>模型口径说明</b>：本模型按教材逐条实现——成本-产量阶梯(P26主表)、P27本地建厂成本、通胀累加(尤0/纳5%/尼1.25%每季)、汇率、库存费10%、销代$150K+新聘/调人培训$50K+解雇成本$150K、销代审计师上限(尤≤13/16・纳≤8/9・尼≤11/12)、管理费$200K/人、折旧2.5%/季、迁厂首次$1M安装(入固定资产)+$100K开办(仅首次)、债务25%/年单利、短投8%/年、现金$5M-$10M自动借/投并逐季结转、所得税38%、产量配额(单市场≤999K/单产品≤2997K)、研发成功需预算达标(不足则参数不变、钱白花)、销售时间70/20/10、价格弹性(高于历史价→销量降)、广告领先者效应、市场份额双口径。<br><b>简化处理</b>：销量采用「参数匹配×广告×销代×价格弹性×销售时间×需求上限」简化需求函数(教学推演)；应收账款回收期按即期近似(仅移动收现时点、不影响损益与ROE)；股票回购/独家生产权申请属资金腾挪/竞争前置动作、不改变单季盈亏故未建模。P28成本口径待核对，成本以P26为准。
 </div>
 </div>
 
@@ -345,6 +345,13 @@ function unitCostBase(pk,site,destNi,qty){
 function adFactor(ad,pk){ if(pk==='m3')return 1; return 0.55+0.45*Math.min(1,ad/450);}
 function repFactor(reps,pk){ // 销代×销售时间: 该产品可用销售力
  const eff=reps*SALESTIME[pk]; return 0.35+0.65*Math.min(1,eff/8);}
+// 价格弹性(P11): 定价高于历史价→销量受压, 低于历史价→销量上升. 以历史价为锚点线性弹性
+function priceFactor(price,pk){
+ const base=HISTPRICE[pk];
+ const ratio=price/base;
+ // 价格每高于基准价10%, 需求降~8%; 低10%升~8%(封顶[0.35,1.35])
+ return Math.max(0.35, Math.min(1.35, 1-0.8*(ratio-1)));
+}
 function matchScore(pk,ni,q){
  const id=IDEAL[pk][q][ni], p=Q[q].prod[pk];
  const dt=(p.tq!=null?p.tq:PARAM_INIT[pk][0])-id[0];
@@ -358,11 +365,14 @@ function matchScore(pk,ni,q){
  return Math.max(0,1-dist/2.8);
 }
 
-// ===== 核心计算: 算第 q 季 (carryCash=上季期末现金) =====
-function calcQ(q, carryFixed, carryEquity, prevReps, carryCash){
+// ===== 销代限额(P15 审计师上限, 不可突破) =====
+const REP_CAP=[[13,8,11],[13,8,11],[14,9,12],[14,9,12]]; // 每季尤/纳/尼上限(第2季示例屁13/纳8/尼11, 后续递增)
+
+// ===== 核心计算: 算第 q 季 (carryCash=上季期末现金, extraMove=本季首次换厂开办费, prevRepsByNat=上季各国销代) =====
+function calcQ(q, carryFixed, carryEquity, prevReps, carryCash, extraMove, prevRepsByNat){
  // 先结算研发(累积)
  for(const pk of PKEY) resolveParam(pk);
- let rev=0,cogsSold=0,invVal=0,promo=0,rd=0,repCost=0,trainCost=0,moveCost=0,installCapex=0;
+ let rev=0,cogsSold=0,invVal=0,promo=0,rd=0,repCost=0,trainCost=0,fireCost=0,moveCost=extraMove||0,installCapex=0;
  const detail=[];
  let repsByNat=[0,0,0];
  let quotaWarn=[];
@@ -373,9 +383,9 @@ function calcQ(q, carryFixed, carryEquity, prevReps, carryCash){
   for(let ni=0;ni<3;ni++){
    const x=p.nat[ni]; if(x.qty<=0) continue;
    prodTotal+=x.qty;
-   const ms=matchScore(pk,ni,q),af=adFactor(x.ad,pk),rf=repFactor(x.reps,pk);
+   const ms=matchScore(pk,ni,q),af=adFactor(x.ad,pk),rf=repFactor(x.reps,pk),pf=priceFactor(x.price,pk);
    const cap=DEMAND[pk][q][ni];
-   const share=Math.min(0.30, ms*af*rf*0.30);
+   const share=Math.min(0.30, ms*af*rf*pf*0.30);
    const potential=Math.floor(cap*share);
    const sold=Math.min(x.qty,potential);
    const uc=unitCostBase(pk,x.site,ni,x.qty)*(1+INFLAT[ni]*q);
@@ -384,7 +394,6 @@ function calcQ(q, carryFixed, carryEquity, prevReps, carryCash){
    invVal+=(x.qty-sold)*uc;
    promo+=x.ad*1000;
    repsByNat[ni]+=x.reps;
-   if(x.site!==0){ moveCost+=100000; } // 每次换厂开办费$100K(计损益)
    detail.push({pk:PNAME[pi],nat:NATNAME[ni],ms,sold,potential,qty:x.qty,uc,share,
      rev:sold*x.price, site:NATNAME[x.site], ok:p._ok});
   }
@@ -394,14 +403,21 @@ function calcQ(q, carryFixed, carryEquity, prevReps, carryCash){
  // 销售代表薪资: 各国实际投放销代 × $150K
  const totalReps=repsByNat.reduce((a,b)=>a+b,0);
  repCost=totalReps*150000;
- // 新聘培训: 本季销代 > 上季 → 增量×$50K
- const prevTot=prevReps||INIT_REPS.reduce((a,b)=>a+b,0);
- if(totalReps>prevTot) trainCost=(totalReps-prevTot)*50000;
+ // 销代限额校验(P15): 各国不可超审计师上限
+ const capRow=REP_CAP[q]||REP_CAP[REP_CAP.length-1];
+ for(let ni=0;ni<3;ni++){ if(repsByNat[ni]>capRow[ni]) quotaWarn.push(NATNAME[ni]+'销代'+repsByNat[ni]+'人超限('+capRow[ni]+')'); }
+ // 新聘培训 + 解雇成本 + 跨国调人再培训(P15, 按各国增减分别算)
+ const prevBN=prevRepsByNat||INIT_REPS.slice();
+ for(let ni=0;ni<3;ni++){
+  const d=repsByNat[ni]-prevBN[ni];
+  if(d>0) trainCost+=d*50000;        // 新增/调入: 培训$50K/人
+  else if(d<0) fireCost+=(-d)*150000; // 解雇成本=该代表下季费用($150K)
+ }
  const invFee=invVal*0.10;
  const mgmt=Q[q].members*200000;
  const fixed=carryFixed;
  const dep=fixed/40;
- const opCost=cogsSold+invFee+promo+rd+repCost+trainCost+mgmt+dep+moveCost;
+ const opCost=cogsSold+invFee+promo+rd+repCost+trainCost+fireCost+mgmt+dep+moveCost;
  const ebit=rev-opCost;
  // === 资金链: 现金从上季结转 ===
  // 本季运营现金流近似=ebit(含非现金折旧回加,应收/库存占用相互近似抵消为教学简化)
@@ -421,9 +437,10 @@ function calcQ(q, carryFixed, carryEquity, prevReps, carryCash){
  const pretax=ebit-interest+invIncome;
  const tax=pretax>0?pretax*0.38:0;
  const net=pretax-tax;
- // 期末现金(结转下季): 保留$5M-$10M区间, 超额部分已转短投
- const cashEnd=Math.max(5000000,Math.min(10000000,cashAfterDebt))+(net-ebit); // 税后调整近似
- return {rev,cogsSold,invVal,invFee,promo,rd,repCost,trainCost,mgmt,dep,moveCost,
+ // 期末现金(结转下季): 从 cashPre 出发, 加借款减利息加短投收益减税, 再箭到[5M,10M]区间(超额已转短投/不足已借)
+ const cashRaw=cashPre+debt-interest+invIncome-tax-Math.max(0,shortInv);
+ const cashEnd=Math.max(5000000,Math.min(10000000,cashRaw+Math.max(0,shortInv)));
+ return {rev,cogsSold,invVal,invFee,promo,rd,repCost,trainCost,fireCost,mgmt,dep,moveCost,
    ebit,debt,interest,shortInv,invIncome,pretax,tax,net,totalReps,repsByNat,detail,fixed,
    cashEnd:Math.max(0,cashEnd),quotaWarn};
 }
@@ -432,22 +449,28 @@ function calcQ(q, carryFixed, carryEquity, prevReps, carryCash){
 function calcCumulative(){
  let equity=START_EQUITY, fixed=START_FIXED, prevReps=INIT_REPS.reduce((a,b)=>a+b,0);
  let cash=START_CASH;
+ let prevBN=INIT_REPS.slice(); // 上季各国销代
  let installedNat={}; // 已安装过的(产品,产地)
+ let siteHist={}; // 已经开过厂的(产品,产地), 用于判定首次换厂开办费
  const perQ=[];
  for(let q=0;q<=cur;q++){
-  // 本季新增安装费(首次向纳/尼下单每产品$1M)
-  let newInstall=0;
+  // 本季新增安装费(首次向纳/尼下单每产品$1M) + 首次换厂开办费$100K
+  let newInstall=0, newMove=0;
   for(const pk of PKEY){ for(let ni=0;ni<3;ni++){
     const x=Q[q].prod[pk].nat[ni];
-    if(x.qty>0 && x.site!==0){ const key=pk+'@'+x.site; if(!installedNat[key]){installedNat[key]=1; newInstall+=1000000;} }
+    if(x.qty>0 && x.site!==0){
+      const key=pk+'@'+x.site;
+      if(!installedNat[key]){installedNat[key]=1; newInstall+=1000000; newMove+=100000;} // 首次换厂: 安装费+开办费
+    }
   }}
   fixed+=newInstall;
   cash-=newInstall; // 安装费耗现金(转化为固定资产)
-  const r=calcQ(q, fixed, equity, prevReps, cash);
+  const r=calcQ(q, fixed, equity, prevReps, cash, newMove, prevBN);
   r.newInstall=newInstall;
   equity+=r.net; // 留存收益累积
   cash=r.cashEnd; // 现金结转下季
   prevReps=r.totalReps||prevReps;
+  prevBN=r.repsByNat.slice(); // 下季的"上季各国销代"
   perQ.push(r);
  }
  const r=perQ[cur];
@@ -559,8 +582,9 @@ function renderResults(){
   <tr class="sub"><td>− 促销/广告</td><td>${fmt(r.promo)}</td><td></td></tr>
   <tr class="sub"><td>− 研发</td><td>${fmt(r.rd)}</td><td></td></tr>
   <tr class="sub"><td>− 销售代表薪资(${r.totalReps}人)</td><td>${fmt(r.repCost)}</td><td></td></tr>
-  <tr class="sub"><td>− 新聘培训费</td><td>${fmt(r.trainCost)}</td><td></td></tr>
-  <tr class="sub"><td>− 迁厂开办费</td><td>${fmt(r.moveCost)}</td><td></td></tr>
+  <tr class="sub"><td>− 新聘/调人培训费</td><td>${fmt(r.trainCost)}</td><td></td></tr>
+  <tr class="sub"><td>− 解雇成本</td><td>${fmt(r.fireCost||0)}</td><td></td></tr>
+  <tr class="sub"><td>− 迁厂开办费(首次换厂$100K)</td><td>${fmt(r.moveCost)}</td><td></td></tr>
   <tr class="sub"><td>− 管理费</td><td>${fmt(r.mgmt)}</td><td></td></tr>
   <tr class="sub"><td>− 折旧(固定资产$${(r.fixed/1e6).toFixed(1)}M/40)</td><td>${fmt(r.dep)}</td><td></td></tr>
   <tr><td>= 息税前利润 EBIT</td><td class="${r.ebit>=0?'pos':'neg'}">${fmt(r.ebit)}</td><td>${pct(r.ebit/(r.rev||1))}</td></tr>
@@ -616,14 +640,14 @@ function applyPreset(t){
    // 磁2主攻: 尤菲亚(参数稳)+尼赫鲁(追扭矩,本地产省关税)
    Q[q].prod.m2.tq=id2E[0];Q[q].prod.m2.rs=id2E[1];Q[q].prod.m2.rd=q===0?0.3:0.15;
    const m2=Q[q].prod.m2.nat;
-   m2[0]=nd(26,800000);m2[0].reps=10;m2[0].ad=120;m2[0].site=0;
-   m2[2]=nd(48,600000);m2[2].reps=8;m2[2].ad=120;m2[2].site=2;
+   m2[0]=nd(26,800000);m2[0].reps=8;m2[0].ad=120;m2[0].site=0;
+   m2[2]=nd(30,600000);m2[2].reps=7;m2[2].ad=120;m2[2].site=2;
    // 磁3尤菲亚走量(参数追Q理想)
    Q[q].prod.m3.tq=id3E[0];Q[q].prod.m3.rs=id3E[1];Q[q].prod.m3.rd=q===0?0.2:0.15;
-   Q[q].prod.m3.nat[0]=nd(32,900000);Q[q].prod.m3.nat[0].reps=6;Q[q].prod.m3.nat[0].site=0;
+   Q[q].prod.m3.nat[0]=nd(32,900000);Q[q].prod.m3.nat[0].reps=4;Q[q].prod.m3.nat[0].site=0;
    // 磁1收缩:只做尼赫鲁高价(尼需求Q2反弹,参数升扭矩)
    Q[q].prod.m1.tq=IDEAL.m1[q][2][0];Q[q].prod.m1.rs=IDEAL.m1[q][2][1];Q[q].prod.m1.rd=q===0?0.4:0.1;
-   Q[q].prod.m1.nat[2]=nd(42,300000);Q[q].prod.m1.nat[2].reps=6;Q[q].prod.m1.nat[2].ad=200;Q[q].prod.m1.nat[2].site=2;
+   Q[q].prod.m1.nat[2]=nd(42,300000);Q[q].prod.m1.nat[2].reps=4;Q[q].prod.m1.nat[2].ad=200;Q[q].prod.m1.nat[2].site=2;
    Q[q].members=3; Q[q].debtCap=10;
   }
   cur=3;curP=1;selProd(1);renderAll();return;
