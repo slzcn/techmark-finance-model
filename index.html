@@ -226,6 +226,12 @@ tr.sub td:first-child{padding-left:16px}
   border-radius:7px;display:inline-block}
 .dimtag.prod{background:rgba(246,173,85,.14);color:var(--accent2)}
 .dimtag.sales{background:rgba(129,178,252,.14);color:#81b2fc}
+.compbtn{padding:9px 18px;border-radius:10px;border:1.5px solid var(--line2);background:var(--panel2);
+  color:var(--txt);font-weight:800;font-family:inherit;cursor:pointer;font-size:13px;transition:.15s}
+.compbtn:hover{transform:translateY(-1px)}
+.compbtn.on{border-color:var(--accent);background:linear-gradient(90deg,rgba(79,209,197,.2),var(--panel2));color:var(--accent)}
+.grid2{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:800px){.grid2{grid-template-columns:1fr}}
 .slrow{display:flex;align-items:center;gap:9px}
 .slrow input[type=range]{flex:1;min-width:0}
 .slnum{width:82px;flex:none;background:var(--bg);border:1px solid var(--line2);border-radius:8px;
@@ -397,6 +403,11 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
   <div class="hint" id="stratHint" style="margin-top:10px"></div>
 </div>
 
+<div class="card full" id="competCard">
+  <h2>⚔️ 竞争对手 <span class="badge" id="competBadge">可选·默认关闭</span></h2>
+  <div id="competCtrls"></div>
+</div>
+
 <div class="grid">
   <div class="card">
     <h2>🔬 二·研发决策 <span class="badge" id="curProd">磁2</span></h2>
@@ -519,6 +530,9 @@ let STOCK_GROWTHPREM=80; // 增长溢价系数($/每100%销售增长),体现成�
 // 只调价格弹性斜率(顾客对高价的容忍度), 不凭空造利润; 中性=原始教材口径
 let STRATEGY='neutral'; // 'diff'差异化 | 'cost'成本领先 | 'neutral'中性
 function priceSlope(){ return STRATEGY==='diff'?0.55 : STRATEGY==='cost'?1.05 : 0.8; }
+// ===== 竞争对手(可选): 关闭=沿用固定30%上限(默认,数字不变); 打开=相对份额=你的吸引力/(你的+对手吸引力) =====
+// rival[pk]=场上对手的等效吸引力总和(你满吸引力=1); 2.3≈还原当前默认竞争强度(满吸引力时份额~30%)
+let COMPET={on:false, rival:{m1:2.3,m2:2.3,m3:2.3}, rivalStock:0};
 
 // ===== 决策状态: 每季独立 =====
 function blankQ(){
@@ -627,7 +641,10 @@ function calcQ(q, carryFixed, carryEquity, prevReps, carryCash, extraMove, prevR
    prodTotal+=x.qty;
    const ms=matchScore(pk,ni,q),af=adFactor(x.ad,pk),rf=repFactor(x.reps,pk),pf=priceFactor(x.price,pk);
    const cap=DEMAND[pk][q][ni];
-   const share=Math.min(0.30, ms*af*rf*pf*0.30);
+   const attract=ms*af*rf*pf;
+   // 竞争对手开启→相对份额(你的吸引力 vs 对手); 关闭→固定30%上限(原口径,数字不变)
+   const share=COMPET.on ? attract/(attract+Math.max(0.0001,COMPET.rival[pk]||0))
+                         : Math.min(0.30, attract*0.30);
    const potential=Math.floor(cap*share);
    const sold=Math.min(x.qty,potential);
    // 丢单检测(P14): 潜在销量>产量 且 产量已抵单市场配额999K → 超出订单落到竞争对手
@@ -836,8 +853,11 @@ function dset(key,v){
  else if(a[0]==='N') Q[cur].prod[PKEY[curP]].nat[+a[1]][a[2]]=v;
  else if(a[0]==='members') Q[cur].members=v;
  else if(a[0]==='debtCap') Q[cur].debtCap=v;
+ else if(a[0]==='C') COMPET.rival[a[1]]=v;
+ else if(a[0]==='CS') COMPET.rivalStock=v;
  renderAll();
 }
+function toggleCompet(){ COMPET.on=!COMPET.on; renderAll(); }
 function setP(k,v){Q[cur].prod[PKEY[curP]][k]=+v;renderAll();}
 function setRD(v){Q[cur].prod[PKEY[curP]].rd=+v;renderAll();}
 // 一键把研发预算补到"让当前目标生效"所需, 目标随即落地、销量/利润联动变化
@@ -925,7 +945,7 @@ function renderResults(){
 const LS_KEY='techmark_state_v1';
 function persist(){
  try{ localStorage.setItem(LS_KEY, JSON.stringify({
-  Q,STRATEGY,cur,curP,stockPrice,
+  Q,STRATEGY,cur,curP,stockPrice,COMPET,
   COST_SCALE,HISTPRICE,SHARES,STOCK_PE,STOCK_BOOKMULT,STOCK_GROWTHPREM,
   START_CASH,START_EQUITY,START_FIXED,REV_T
  })); }catch(e){}
@@ -936,6 +956,7 @@ function restore(){
   const o=JSON.parse(s);
   if(Array.isArray(o.Q)&&o.Q.length===6) Q=o.Q;
   if(o.STRATEGY) STRATEGY=o.STRATEGY;
+  if(o.COMPET&&typeof o.COMPET==='object'&&o.COMPET.rival) COMPET=o.COMPET;
   if(typeof o.cur==='number') cur=o.cur;
   if(typeof o.curP==='number') curP=o.curP;
   stockPrice=(o.stockPrice===null||typeof o.stockPrice==='number')?o.stockPrice:stockPrice;
@@ -995,7 +1016,9 @@ function stockHint(est){
  const use=effStock(); const src = stockPrice!=null ? '游戏实际' : '模型估算';
  const d=use-168;
  const cmp = d>=0 ? `已超 $${Math.round(d).toLocaleString()}` : `差 $${Math.round(-d).toLocaleString()}`;
- return `目标 ≥ $168 · 用${src}值 $${Math.round(use).toLocaleString()} · ${cmp}`;
+ let s=`目标 ≥ $168 · 用${src}值 $${Math.round(use).toLocaleString()} · ${cmp}`;
+ if(COMPET.rivalStock>0){ s+= use>=COMPET.rivalStock ? ` · 高于对手$${COMPET.rivalStock}→可夺魁` : ` · 低于对手$${COMPET.rivalStock}→难夺魁`; }
+ return s;
 }
 function setStock(v){
  stockPrice = (v===''||v==null) ? null : +v;
@@ -1155,7 +1178,28 @@ function renderStrat(){
  if(hint) hint.innerHTML='📌 '+STRAT_DEF[STRATEGY].play+' <span style="color:var(--faint)">当前价格弹性斜率='+priceSlope()+'(越小越能扛高价)</span>';
 }
 function setStrat(k){ STRATEGY=k; renderStrat(); renderResults(); }
-function renderAll(){renderRevTargets();renderStrat();renderCalib();renderCtrls();renderResults();
+// ===== 竞争对手 UI =====
+function renderCompet(){
+ const el=document.getElementById('competCtrls'); if(!el) return;
+ const badge=document.getElementById('competBadge');
+ if(badge) badge.textContent = COMPET.on?'已开启·相对份额':'可选·默认关闭';
+ const toggle=`<button class="compbtn ${COMPET.on?'on':''}" onclick="toggleCompet()">${COMPET.on?'● 竞争模式已开启':'○ 点击开启竞争模式'}</button>`;
+ if(!COMPET.on){
+  el.innerHTML=toggle+`<div class="hint" style="margin-top:10px">当前为<b>关闭</b>状态: 沿用固定 30% 市场上限(原口径, 你已有的推演数字不变)。开启后改用<b>相对份额</b> = 你的吸引力 /(你的吸引力 + 对手吸引力), 涨价/减广告会把份额让给对手, 对手弱时你也能吃超过 30%。`;
+  return;
+ }
+ // 展示各产品在"当前决策下"的对手强度滑块 + 由此得到的份额示意
+ let rows='';
+ for(const pk of PKEY){
+  rows+=`<div class="ctrl"><label>${{m1:'磁1',m2:'磁2',m3:'磁3'}[pk]} 对手综合强度 <span>${(COMPET.rival[pk]||0).toFixed(1)}</span></label>
+    ${slRow('C:'+pk,(COMPET.rival[pk]||0),0,6,0.1)}</div>`;
+ }
+ el.innerHTML=toggle+`<div class="grid2" style="margin-top:12px">${rows}</div>
+  <div class="ctrl" style="margin-top:8px"><label>对手预计最高股价(夺魁对比·可留空) <span>${COMPET.rivalStock>0?('$'+COMPET.rivalStock):'—'}</span></label>
+    ${slRow('CS',(COMPET.rivalStock||0),0,600,1)}</div>
+  <div class="hint" style="margin-top:8px">对手强度=场上竞品的等效吸引力总和(你满吸引力记为1)。<b>2.3≈还原默认竞争强度</b>(你满吸引力时约拿 30%);调高=对手更强、你份额被压;调低=对手弱、你能吃更多。夺奖看"五项达标且股价最高", 填对手最高股价即可在上方夺奖卡看你能否夺魁。`;
+}
+function renderAll(){renderRevTargets();renderStrat();renderCompet();renderCalib();renderCtrls();renderResults();
  document.querySelectorAll('.qtab').forEach((t,i)=>t.classList.toggle('on',i===cur));}
 
 function applyPreset(t){
