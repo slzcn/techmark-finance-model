@@ -314,7 +314,7 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 <div class="card full goalcard">
   <h2>🏆 第6期夺奖目标 <span class="badge" id="goalCount">0/5 达标</span></h2>
   <div id="goals" class="goalgrid"></div>
-  <div class="hint" style="margin-top:12px">五项全达标、且股价最高的组夺大奖。本模型为 4 季教学版，四项财务比率按<b>末季（期终）口径</b>实时核验；股票价格另有游戏公式，请从游戏中读出后填入核对 ≥$168。</div>
+  <div class="hint" style="margin-top:12px">五项全达标、且股价最高的组夺大奖。共 6 期模拟，四项财务比率按<b>第6期（期终）口径</b>实时核验；股票价格另有游戏公式，请从游戏中读出后填入核对 ≥$168。<b>注</b>：第5-6期需求/理想参数为趋势外推推测值，有真实教材数据可替换校正。</div>
 </div>
 
 <div class="grid">
@@ -345,7 +345,7 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
   </div>
 
   <div class="card full">
-    <h2>📊 季度损益表（$EU）<span class="badge" id="pnlQ">第4季</span></h2>
+    <h2>📊 季度损益表（$EU）<span class="badge" id="pnlQ">第6季</span></h2>
     <div class="tablewrap"><table id="pnl"></table></div>
   </div>
 
@@ -370,7 +370,7 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 <div id="page-drift" class="page">
   <div class="imgcard">
     <h2>🎯 三国九点参数漂移定位图</h2>
-    <p>磁1/磁2/磁3 × 尤菲亚/纳达卡/尼赫鲁 × 第1-4季 理想参数(扭矩·电阻)的漂移方向。同型号三国方向相反→无法通吃，需按国差异化研发。</p>
+    <p>磁1/磁2/磁3 × 尤菲亚/纳达卡/尼赫鲁 × 第1-6期 理想参数(扭矩·电阻)的漂移方向。同型号三国方向相反→无法通吃，需按国差异化研发。</p>
     <img src="drift-map.png" alt="参数漂移定位图">
     <a class="dl" href="drift-map.png" download>⬇ 下载原图</a>
   </div>
@@ -386,15 +386,17 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 </div>
 <script>
 // ===== 教材数据 (P1-P28) =====
+// 每产品 6 期 × 三国(尤/纳/尼)需求量。Q1-Q4=教材数据；Q5-Q6=按各序列走势线性外推的【推测值】，待真实教材数据校正。
 const DEMAND={
- m1:[[2223000,1200625,1064250],[3515182,1277178,1732485],[1478559,766582,685821],[871590,463475,830711]],
- m2:[[1163147,494143,917493],[1422813,333956,1219871],[1911212,496564,2126350],[2457062,524899,2657497]],
- m3:[[3513705,147319,214504],[3861643,168294,215544],[3426611,181457,231389],[3189809,159095,229428]]
+ m1:[[2223000,1200625,1064250],[3515182,1277178,1732485],[1478559,766582,685821],[871590,463475,830711],[566000,301000,750000],[396000,211000,700000]],
+ m2:[[1163147,494143,917493],[1422813,333956,1219871],[1911212,496564,2126350],[2457062,524899,2657497],[2977000,540000,3217000],[3480000,555000,3800000]],
+ m3:[[3513705,147319,214504],[3861643,168294,215544],[3426611,181457,231389],[3189809,159095,229428],[3000000,165000,232000],[2820000,170000,235000]]
 };
+// 每产品 6 期 × 三国理想参数[扭矩,电阻]。Q1-Q4=教材数据；Q5-Q6=按趋势外推的【推测值】，待校正。
 const IDEAL={
- m1:[[[4.2,3.9],[4.0,4.3],[4.0,2.2]],[[3.9,3.9],[3.8,4.3],[4.2,2.4]],[[3.6,3.7],[3.6,4.2],[4.3,2.5]],[[3.2,3.6],[3.4,4.1],[4.5,2.7]]],
- m2:[[[2.5,2.4],[2.6,2.6],[3.5,2.7]],[[2.6,2.5],[2.5,2.6],[3.7,2.7]],[[2.6,2.5],[2.5,2.7],[3.8,2.8]],[[2.7,2.6],[2.5,2.7],[4.2,2.9]]],
- m3:[[[1.9,3.5],[1.1,1.5],[4.4,1.5]],[[2.2,3.5],[1.2,1.5],[4.2,1.5]],[[2.6,3.5],[1.3,1.5],[3.9,1.6]],[[2.9,3.5],[1.4,1.5],[3.7,1.7]]]
+ m1:[[[4.2,3.9],[4.0,4.3],[4.0,2.2]],[[3.9,3.9],[3.8,4.3],[4.2,2.4]],[[3.6,3.7],[3.6,4.2],[4.3,2.5]],[[3.2,3.6],[3.4,4.1],[4.5,2.7]],[[2.9,3.5],[3.2,4.0],[4.6,2.8]],[[2.6,3.4],[3.0,3.9],[4.7,2.9]]],
+ m2:[[[2.5,2.4],[2.6,2.6],[3.5,2.7]],[[2.6,2.5],[2.5,2.6],[3.7,2.7]],[[2.6,2.5],[2.5,2.7],[3.8,2.8]],[[2.7,2.6],[2.5,2.7],[4.2,2.9]],[[2.7,2.6],[2.5,2.7],[4.4,2.9]],[[2.8,2.7],[2.5,2.8],[4.6,3.0]]],
+ m3:[[[1.9,3.5],[1.1,1.5],[4.4,1.5]],[[2.2,3.5],[1.2,1.5],[4.2,1.5]],[[2.6,3.5],[1.3,1.5],[3.9,1.6]],[[2.9,3.5],[1.4,1.5],[3.7,1.7]],[[3.2,3.5],[1.5,1.5],[3.5,1.7]],[[3.5,3.5],[1.6,1.5],[3.3,1.8]]]
 };
 // P26 成本阶梯: [[上限,尤菲亚产,运纳,运尼]] — 就近本地产用尤菲亚列(省关税), 跨国运输用对应列
 // P26 = 尤菲亚生产: [上限, 尤菲亚产成本, 运纳达卡, 运尼赫鲁]
@@ -435,8 +437,8 @@ function blankQ(){
  };
 }
 function nd(price,qty){return {price:price,qty:qty===undefined?0:qty,reps:0,ad:0,site:0};} // site:产地 0尤1纳2尼
-let Q=[blankQ(),blankQ(),blankQ(),blankQ()];
-let cur=3, curP=1;
+let Q=[blankQ(),blankQ(),blankQ(),blankQ(),blankQ(),blankQ()];
+let cur=5, curP=1;
 let stockPrice=null; // 夺奖目标: 游戏内实际股价, 用户手填(游戏另有定价公式, 本模型不推算)
 // 研发参数是"累积生效"的: 记录每产品当前实际参数(初始=首季理想附近的历史值)
 // 简化: 每季可设目标参数, 研发预算够则本季生效, 否则维持上季
@@ -508,7 +510,7 @@ function matchScore(pk,ni,q){
 }
 
 // ===== 销代限额(P15 审计师上限, 不可突破) =====
-const REP_CAP=[[13,8,11],[13,8,11],[14,9,12],[14,9,12]]; // 每季尤/纳/尼上限(第2季示例屁13/纳8/尼11, 后续递增)
+const REP_CAP=[[13,8,11],[13,8,11],[14,9,12],[14,9,12],[15,10,13],[15,10,13]]; // 6期 各期尤/纳/尼销代上限(每两期+1递增, Q5-Q6为外推)
 
 // ===== 核心计算: 算第 q 季 (carryCash=上季期末现金, extraMove=本季首次换厂开办费, prevRepsByNat=上季各国销代) =====
 function calcQ(q, carryFixed, carryEquity, prevReps, carryCash, extraMove, prevRepsByNat){
@@ -637,7 +639,7 @@ function pct(n){return (n*100).toFixed(1)+'%';}
 function renderQtabs(){
  const C=calcCumulative();
  let h='';
- for(let q=0;q<4;q++){
+ for(let q=0;q<6;q++){
   const net=C.perQ[q]?C.perQ[q].net:0;
   const cls=(q===cur?'on ':'')+(net>=0?'profit':'loss');
   h+=`<div class="qtab ${cls}" onclick="selQ(${q})">第${q+1}季
@@ -814,19 +816,19 @@ function renderAll(){renderCtrls();renderResults();
  document.querySelectorAll('.qtab').forEach((t,i)=>t.classList.toggle('on',i===cur));}
 
 function applyPreset(t){
- if(t==='reset'){ Q=[blankQ(),blankQ(),blankQ(),blankQ()]; cur=3;curP=1; selProd(1); renderAll(); return; }
+ if(t==='reset'){ Q=[blankQ(),blankQ(),blankQ(),blankQ(),blankQ(),blankQ()]; cur=5;curP=1; selProd(1); renderAll(); return; }
  if(t==='hist'){ // 历史基准:全在尤菲亚产,历史价,初始销代
-  Q=[blankQ(),blankQ(),blankQ(),blankQ()];
-  for(let q=0;q<4;q++){
+  Q=[blankQ(),blankQ(),blankQ(),blankQ(),blankQ(),blankQ()];
+  for(let q=0;q<6;q++){
    Q[q].prod.m1.nat=[nd(40,400000),nd(40,0),nd(40,0)];Q[q].prod.m1.nat[0].reps=8;Q[q].prod.m1.nat[0].ad=450;
    Q[q].prod.m2.nat=[nd(26,300000),nd(26,0),nd(26,0)];Q[q].prod.m2.nat[0].reps=3;Q[q].prod.m2.nat[0].ad=50;
    Q[q].prod.m3.nat=[nd(32,500000),nd(32,0),nd(32,0)];Q[q].prod.m3.nat[0].reps=1;
   }
-  cur=3;curP=1;selProd(1);renderAll();return;
+  cur=5;curP=1;selProd(1);renderAll();return;
  }
  if(t==='best'){
-  Q=[blankQ(),blankQ(),blankQ(),blankQ()];
-  for(let q=0;q<4;q++){
+  Q=[blankQ(),blankQ(),blankQ(),blankQ(),blankQ(),blankQ()];
+  for(let q=0;q<6;q++){
    const id2E=IDEAL.m2[q][0],id2N=IDEAL.m2[q][2],id3E=IDEAL.m3[q][0];
    // 磁2主攻: 尤菲亚(参数稳)+尼赫鲁(追扭矩,本地产省关税)
    Q[q].prod.m2.tq=id2E[0];Q[q].prod.m2.rs=id2E[1];Q[q].prod.m2.rd=q===0?0.3:0.15;
@@ -842,7 +844,7 @@ function applyPreset(t){
    Q[q].prod.m1.nat[2]=nd(42,300000);Q[q].prod.m1.nat[2].reps=4;Q[q].prod.m1.nat[2].ad=200;Q[q].prod.m1.nat[2].site=2;
    Q[q].members=3; Q[q].debtCap=10;
   }
-  cur=3;curP=1;selProd(1);renderAll();return;
+  cur=5;curP=1;selProd(1);renderAll();return;
  }
 }
 selProd(1);renderAll();
