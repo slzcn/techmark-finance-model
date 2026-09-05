@@ -362,7 +362,7 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 <div id="page-model" class="page on">
 
 <div class="note full" style="border-left-color:var(--red);margin-bottom:14px">
-🔎 <b>数据出处声明（务必先读）</b>：<br>✅ <b>真实数据</b>：①「第6期夺奖目标」五项财务标准（股价≥$168、销售增长≥5%、毛利率≥35%、存货资产比4%~9%、资产负债率≤25%），来自官方目标图；②<b>第1-3期的全部己方决策</b>（价格/产量/市场推广/销售代表与时间分配/研发感抗·内阻·预算/生产地点/负债上限），已从 techmarkchina.cn 你的账号原样录入，可切季度核对。第4-6期空白待明天。<br>🔁 <b>命名说明</b>：TechMark 同一局有两套官方皮肤，数值完全相同、只是叫法不同——本模型用「墨晶1/2/3 · 北美联盟/亚太共和/欧联邦」；若你在系统另一视图看到「雷墨磁1/2/3 · 尤菲亚/纳达卡/尼赫鲁」，按位置一一对应即可（北美=尤菲亚、亚太=纳达卡、欧联=尼赫鲁）。<br>⚠️ <b>仍是占位（未核实）</b>：驱动预测的<b>市场需求量、理想研发参数、成本阶梯、通胀/汇率/税率/折旧/库存费、期初现金/权益/固定资产、股价估算系数</b>等——这些是为让模型能算通而填的假设，<b>不代表官方口径</b>，故左侧损益/ROE/达标结果只是粗略推演。拿到真实成本表/需求表/规则页发我即替换。
+🔎 <b>数据出处声明（务必先读）</b>：<br>✅ <b>真实数据</b>：①「第6期夺奖目标」五项财务标准（股价≥$168、销售增长≥5%、毛利率≥35%、存货资产比4%~9%、资产负债率≤25%），来自官方目标图；②<b>第1-3期的全部己方决策</b>（价格/产量/市场推广/销售代表与时间分配/研发感抗·内阻·预算/生产地点/最高负债限额/股票回购/预测利润·收入），已从 techmarkchina.cn 你的账号原样录入，可切季度核对——其中<b>最高负债限额</b>你三期均<b>未设限</b>(默认999,999K)，<b>股票回购、预测利润、预测收入</b>三期均<b>留空</b>。材料里<b>只有决策输入、没有任何结果/损益产出</b>。第4-6期空白待明天。<br>🔁 <b>命名说明</b>：TechMark 同一局有两套官方皮肤，数值完全相同、只是叫法不同——本模型用「墨晶1/2/3 · 北美联盟/亚太共和/欧联邦」；若你在系统另一视图看到「雷墨磁1/2/3 · 尤菲亚/纳达卡/尼赫鲁」，按位置一一对应即可（北美=尤菲亚、亚太=纳达卡、欧联=尼赫鲁）。<br>⚠️ <b>仍是占位（未核实）</b>：驱动预测的<b>市场需求量、理想研发参数、成本阶梯、通胀/汇率/税率/折旧/库存费、期初现金/权益/固定资产、股价估算系数</b>等——这些是为让模型能算通而填的假设，<b>不代表官方口径</b>，故左侧损益/ROE/达标结果只是粗略推演。拿到真实成本表/需求表/规则页发我即替换。
 </div>
 
 <div class="toolbar">
@@ -543,7 +543,8 @@ function blankQ(){
    m2:{tq:null,rs:null,rd:0,nat:[nd(26),nd(0,0),nd(0,0)]},
    m3:{tq:null,rs:null,rd:0,nat:[nd(32),nd(0,0),nd(0,0)]}
   },
-  debtCap:0, members:3
+  debtCap:0, members:3,
+  buyback:null, fProfit:null, fIncome:null  // 自报字段(真实表可留空): 股票回购$K / 本期预测利润$K / 本期预测收入$K
  };
 }
 function nd(price,qty){return {price:price,qty:qty===undefined?0:qty,reps:0,ad:0,site:0};} // site:产地 0尤1纳2尼
@@ -858,13 +859,29 @@ function renderCtrls(){
   m2:'墨晶2(占位描述,未核实)',
   m3:'墨晶3(占位描述,未核实,该产品不投广告)'};
  document.getElementById('prodNote').textContent='💡 '+notes[pk];
+ const dc=Q[cur].debtCap, dcTxt=(dc>=999?'未设限':('$'+dc+'M'));
+ const nb=(k,v,ph)=>`<input type="number" inputmode="decimal" step="1" class="slnum" style="width:100%;text-align:right" placeholder="${ph}" value="${v==null?'':v}" onchange="setFin('${k}',this.value)">`;
  document.getElementById('finCtrls').innerHTML=`
   <div class="ctrl"><label>组员数(管理费$200K/人/季) <span>${Q[cur].members}人</span></label>
    ${slRow('members',Q[cur].members,1,6,1)}</div>
-  <div class="ctrl"><label>债务上限($M·信用额度) <span>$${Q[cur].debtCap}M</span></label>
-   ${slRow('debtCap',Q[cur].debtCap,0,30,1)}
-   <div class="hint">债务25%/年(6.25%/季)单利·极贵；现金<$5M自动借足、>$10M自动短投8%/年</div></div>
+  <div class="ctrl"><label>最高负债限额($M) <span>${dcTxt}</span></label>
+   ${slRow('debtCap',Math.min(dc,30),0,30,1)}
+   <div class="hint">真实决策表此项=<b>未设限</b>(系统默认 999,999K≈无上限)；拖动可设一个上限做规划。债务25%/年(6.25%/季)单利·极贵；现金&lt;$5M自动借足、&gt;$10M自动短投8%/年${dc>=999?'。<b>当前:未设限</b>':`　<button onclick="setFin('debtCap',999)" style="margin-left:4px;padding:2px 8px;border:1px solid var(--line2);border-radius:6px;background:var(--panel2);color:var(--accent);font-family:inherit;cursor:pointer;font-size:11px">恢复未设限</button>`}</div></div>
+  <div class="dimtag prod" style="margin-top:4px">自报字段(真实表可留空) · 单位 $K</div>
+  <div class="grid2" style="grid-template-columns:1fr 1fr 1fr">
+   <div class="ctrl"><label style="font-size:12px">股票回购金额</label>${nb('buyback',Q[cur].buyback,'留空=0')}</div>
+   <div class="ctrl"><label style="font-size:12px">本期预测利润</label>${nb('fProfit',Q[cur].fProfit,'你的预测')}</div>
+   <div class="ctrl"><label style="font-size:12px">本期预测收入</label>${nb('fIncome',Q[cur].fIncome,'你的预测')}</div>
+  </div>
+  <div class="note" id="forecastCmp" style="border-left-color:var(--blue)"></div>
   <div class="note">⚠️以下为占位规则(未经材料核实)：折旧2.5%/季｜库存费=期末存货10%｜所得税38%｜通胀 北美0/亚太5%/欧联1.25%每季累加｜产量单市场≤999K｜汇率等——真实规则请以你的规则页为准</div>`;
+}
+// 自报字段(回购/预测利润/预测收入): 仅记录+与模型对照, 不参与损益引擎(回购是资金腾挪, 预测是你自己的判断)
+function setFin(k,v){
+ const n=(v===''||v==null)?null:+v;
+ if(k==='debtCap'){ Q[cur].debtCap=(n==null?0:n); renderAll(); return; } // 影响引擎→全量重算
+ Q[cur][k]=(n!=null&&isNaN(n))?null:n;
+ renderResults(); // 仅刷新对照+持久化, 不动损益
 }
 // 拖动条 + 联动数字框: range 实时(oninput), number 失焦/回车才提交(onchange)避免打字被重建打断; 两者共用 dset, renderAll 时同步回填
 function slRow(key,val,min,max,step){
@@ -909,6 +926,20 @@ function renderResults(){
  // 产量配额警告
  const qwEl=document.getElementById('quotaWarn');
  if(qwEl) qwEl.innerHTML=(r.quotaWarn&&r.quotaWarn.length)?`⚠️ 产量超额: ${r.quotaWarn.join('；')}（占位上限 单产品单季≤2997K，未核实）`:'';
+ // 自报预测 vs 模型推算 对照(自报值单位$K)
+ const fcEl=document.getElementById('forecastCmp');
+ if(fcEl){
+  const fp=Q[cur].fProfit, fi=Q[cur].fIncome, bb=Q[cur].buyback;
+  const line=(lbl,selfK,modelV)=>{
+   if(selfK==null) return `<div style="color:var(--faint)">${lbl}：本期未填预测</div>`;
+   const self=selfK*1000, d=modelV-self, dp=self!==0?d/Math.abs(self):null;
+   const cls=Math.abs(dp==null?1:dp)<=0.1?'pos':'warn';
+   return `<div>${lbl}：你预测 <b>${fmtM(self)}</b> ｜ 模型推算 <b>${fmtM(modelV)}</b> ｜ 差 <span class="${cls}">${d>=0?'+':''}${fmtM(d)}${dp==null?'':' ('+(d>=0?'+':'')+(dp*100).toFixed(0)+'%)'}</span></div>`;
+  };
+  let h=`📈 <b>你的预测 vs 模型推算</b>（自报值为参考，不参与损益）<br>`+line('本期利润',fp,r.net)+line('本期收入',fi,r.rev);
+  if(bb!=null&&bb>0) h+=`<div style="color:var(--dim)">股票回购：<b>${fmtM(bb*1000)}</b>（资金腾挪，本模型不计入单季损益）</div>`;
+  fcEl.innerHTML=h;
+ }
  // 匹配度
  let mh='';
  for(let ni=0;ni<3;ni++){
@@ -970,7 +1001,7 @@ function renderResults(){
 }
 
 // ===== 决策/标定/目标持久化: 刷新不丢失 =====
-const LS_KEY='techmark_state_v2';  // v2: 真实决策录入 + 术语更正(墨晶/北美-亚太-欧联/感抗-内阻)
+const LS_KEY='techmark_state_v3';  // v3: 补齐真实表字段(负债未设限/回购/预测利润·收入) + 预测对照
 function persist(){
  try{ localStorage.setItem(LS_KEY, JSON.stringify({
   Q,STRATEGY,cur,curP,stockPrice,COMPET,
@@ -1015,18 +1046,18 @@ function loadRealDecisions(){
  Q0.prod.m1={tq:4.2,rs:2.4,rd:1.40,nat:mk([40,45,38],[350000,200000,400000],[0,0,0],0)};
  Q0.prod.m2={tq:2.6,rs:2.5,rd:1.20,nat:mk([25,26,26],[250000,0,0],[0,0,0],0)};
  Q0.prod.m3={tq:2.2,rs:3.5,rd:1.20,nat:mk([32,32,32],[0,0,0],[0,0,0],0)};
- Q0.debtCap=30; Q0.members=3; Q0.repsReg=[0,0,0]; Q0.alloc={m1:[0,0,0],m2:[0,0,0],m3:[0,0,0]};
+ Q0.debtCap=999; Q0.members=3; Q0.repsReg=[0,0,0]; Q0.alloc={m1:[0,0,0],m2:[0,0,0],m3:[0,0,0]}; // 第1期表无财务决策段;债限沿用默认未设限
  // ---- 第2期 ---- (生产地由1A"下期生产地点"决定: 墨晶1→北美, 墨晶2→欧联, 墨晶3→北美)
  Q1.prod.m1={tq:4.2,rs:2.4,rd:0,nat:mk([38,40,42],[250000,150000,550000],[15,0,30],0)};
  Q1.prod.m2={tq:2.6,rs:2.5,rd:0,nat:mk([33,26,35],[550000,130000,300000],[35,0,70],2)};
  Q1.prod.m3={tq:2.2,rs:3.5,rd:0,nat:mk([36,33,34],[600000,25000,40000],[0,0,0],0)};
- Q1.debtCap=30; Q1.members=3;
+ Q1.debtCap=999; Q1.members=3; // 真实"最高负债限额"=999,999K(未设限); 回购/预测利润/预测收入 该期均留空(0)
  applyReps(Q1,[12,2,15],{m1:[0.2,0.2,0.2],m2:[0.7,0.7,0.7],m3:[0.1,0.1,0.1]});
  // ---- 第3期 ---- (生产地由第2期"下期生产地点"首值: 墨晶1→欧联, 墨晶2→欧联, 墨晶3→北美)
  Q2.prod.m1={tq:3.6,rs:3.7,rd:1.00,nat:mk([42,38,40],[120000,100000,0],[30,15,20],2)};
  Q2.prod.m2={tq:3.8,rs:2.8,rd:0.95,nat:mk([30,26,33],[300000,80000,750000],[40,15,80],2)};
  Q2.prod.m3={tq:2.6,rs:3.5,rd:0.75,nat:mk([33,31,33],[700000,20000,40000],[0,0,0],0)};
- Q2.debtCap=30; Q2.members=3;
+ Q2.debtCap=999; Q2.members=3; // 真实"最高负债限额"=999,999K(未设限); 回购/预测利润/预测收入 该期均留空(0)
  applyReps(Q2,[14,7,12],{m1:[0.3,0.3,0.2],m2:[0.3,0.4,0.7],m3:[0.4,0.3,0.1]});
  Q=[Q0,Q1,Q2,blankQ(),blankQ(),blankQ()];
  cur=0; curP=0;
