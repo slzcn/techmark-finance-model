@@ -200,6 +200,18 @@ tr.sub td:first-child{padding-left:16px}
 .goalitem input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,209,197,.22)}
 @keyframes goalpulse{0%{box-shadow:0 0 0 0 rgba(79,209,197,.55)}100%{box-shadow:0 0 0 12px rgba(79,209,197,0)}}
 .goalitem.pulse{animation:goalpulse .5s ease-out}
+.calibgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:11px}
+@media(max-width:900px){.calibgrid{grid-template-columns:repeat(2,1fr)}}
+.calibitem{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:10px 12px}
+.calibitem label{display:block;font-size:11.5px;color:var(--dim);font-weight:700;margin-bottom:6px}
+.calibrow{display:flex;align-items:center;gap:6px}
+.calibitem input{flex:1;width:100%;background:var(--bg);border:1px solid var(--line2);border-radius:8px;
+  color:var(--txt);font-size:15px;font-weight:700;padding:5px 9px;font-family:inherit;
+  font-variant-numeric:tabular-nums;-moz-appearance:textfield;min-width:0}
+.calibitem input::-webkit-outer-spin-button,.calibitem input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.calibitem input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,209,197,.22)}
+.calibitem .cu{font-size:12px;color:var(--faint);font-weight:700}
+.calibitem .ch{font-size:10px;color:var(--faint);margin-top:6px;line-height:1.4}
 
 /* ===== 图片卡(漂移图/速查表) ===== */
 .imgcard{background:linear-gradient(168deg,rgba(36,49,80,.5),rgba(22,30,48,.86));
@@ -316,7 +328,13 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 <div class="card full goalcard">
   <h2>🏆 第6期夺奖目标 <span class="badge" id="goalCount">0/5 达标</span></h2>
   <div id="goals" class="goalgrid"></div>
-  <div class="hint" style="margin-top:12px">五项全达标、且股价最高的组夺大奖。共 6 期模拟，四项财务比率按<b>第6期（期终）口径</b>实时核验；股票价格另有游戏公式（本模型不推算，也<b>不影响左侧损益/ROE</b>），请从游戏中读出后填入，仅用于核对 ≥$168 是否达标。<b>注</b>：第5-6期无官方数据，需求量由 Q1-Q4 对数线性回归、理想参数由线性回归预测得出，仅供推演参考。</div>
+  <div class="hint" style="margin-top:12px">五项全达标、且股价最高的组夺大奖。共 6 期模拟，四项财务比率按<b>第6期（期终）口径</b>实时核验。股票价格官方另有公式、且<b>不影响左侧损益/ROE</b>；本模型用透明公式<b>估算</b>一个参考值（每股净资产×权重 + 市盈率×年化EPS + 增长溢价×销售增长率，系数可在下方「标定参数」里调），若你已从游戏读到真实股价，填入下方小输入框即以真实值覆盖核对。<b>注</b>：第5-6期无官方数据，需求量由 Q1-Q4 对数线性回归、理想参数由线性回归预测得出，仅供推演参考。</div>
+</div>
+
+<div class="card full" id="calibCard">
+  <h2>🧭 标定参数 · 已知信息显性化 <span class="badge">成本/股价没给全时的可调假设</span></h2>
+  <div id="calibCtrls" class="calibgrid"></div>
+  <div class="hint" style="margin-top:10px">这些是模型里原本写死的假设，现在全部摊开可改：<b>成本缩放</b>=你的真实单位成本 ÷ 教材P26成本(若拿到成本表就调到吻合)；<b>价格锚</b>=各产品需求价格弹性的基准价(本局真实基准价，售价高于它→销量降)；<b>流通股/市盈率/净资产权重/增长溢价</b>=股价估算公式的系数。改任一项即时重算五目标。</div>
 </div>
 
 <div class="grid">
@@ -419,13 +437,19 @@ const COST_N={
  m2:[[250000,20.16,21.37,30.64],[450000,18.48,19.59,28.09],[550000,16.80,17.81,25.54],[625000,11.76,12.47,17.88],[Infinity,8.40,8.90,12.77]],
  m3:[[325000,36.72,38.92,55.81],[540000,33.66,35.68,51.16],[660000,30.60,32.44,46.51],[750000,21.42,22.71,32.56],[Infinity,15.30,16.22,23.26]]
 };
-const HISTPRICE={m1:40,m2:26,m3:32};
+let HISTPRICE={m1:40,m2:26,m3:32};   // 价格锚(历史价):售价相对它偏离→价格弹性。可在"标定"区改成本局真实基准价
 const INFLAT=[0,0.05,0.0125];
 const NATNAME=['尤菲亚','纳达卡','尼赫鲁'];
 const PKEY=['m1','m2','m3'],PNAME=['磁1','磁2','磁3'];
 const SALESTIME={m1:0.70,m2:0.20,m3:0.10}; // P16 销售时间历史分配
 const INIT_REPS=[12,7,10]; // 初始销售代表 尤/纳/尼
-const START_CASH=5000000, START_EQUITY=30000000, START_FIXED=25000000;
+let START_CASH=5000000, START_EQUITY=30000000, START_FIXED=25000000;
+// ===== 可编辑标定参数(显性化"已知信息"): 成本表/股价公式没给全时,这些都是可调假设 =====
+let COST_SCALE=1;        // 单位成本整体缩放(真实成本是模型的N倍就填N;成本表到手按此校准)
+let SHARES=1000000;      // 流通股数(算每股指标/股价用),游戏若给了实际股数请填入
+let STOCK_PE=12;         // 市盈率倍数(股价估算=PE×年化每股净利 的权重)
+let STOCK_BOOKMULT=1;    // 每股净资产权重(股价估算的账面价值支撑)
+let STOCK_GROWTHPREM=80; // 增长溢价系数($/每100%销售增长),体现成长预期对股价的拉动
 
 // ===== 决策状态: 每季独立 =====
 function blankQ(){
@@ -480,15 +504,12 @@ function unitCostBase(pk,site,destNi,qty){
  const tbl = site===0?COST : site===1?COST_L : COST_N;
  const t=tbl[pk]; let row=t[t.length-1];
  for(const r of t){ if(qty<r[0]){row=r;break;} }
- if(site===destNi) return row[1]; // 本地产本地卖
- // 跨国运输: 按产地表的目标国列取值
- if(site===0){ // 尤菲亚产: 列[2]=纳 列[3]=尼
-  return destNi===1?row[2]:row[3];
- }else if(site===1){ // 纳达卡产: 列[2]=尤 列[3]=尼
-  return destNi===0?row[2]:row[3];
- }else{ // 尼赫鲁产: 列[2]=尤 列[3]=纳
-  return destNi===0?row[2]:row[3];
- }
+ let base;
+ if(site===destNi){ base=row[1]; }                 // 本地产本地卖
+ else if(site===0){ base=destNi===1?row[2]:row[3]; } // 尤菲亚产: 列[2]=纳 列[3]=尼
+ else if(site===1){ base=destNi===0?row[2]:row[3]; } // 纳达卡产: 列[2]=尤 列[3]=尼
+ else { base=destNi===0?row[2]:row[3]; }             // 尼赫鲁产: 列[2]=尤 列[3]=纳
+ return base*COST_SCALE;
 }
 
 function adFactor(ad,pk){ if(pk==='m3')return 1; return 0.55+0.45*Math.min(1,ad/450);}
@@ -636,6 +657,22 @@ function calcCumulative(){
  const netMargin=r.rev>0?r.net/r.rev:0, assetTurn=r.rev/totalAsset, lever=totalAsset/eq;
  const cumNet=perQ.reduce((a,b)=>a+b.net,0);
  return {r,perQ,equity:eq,totalAsset,roa,roe,netMargin,assetTurn,lever,cumNet,fixed:fixedNet,cash:r.cashEnd};
+}
+
+// ===== 五个夺奖目标值的统一计算(正向: 决策→目标) =====
+function goalMetrics(C){
+ const r=C.r;
+ const gm = r.rev>0 ? (r.rev-r.cogsSold)/r.rev : 0;          // 毛利率
+ const prevRev = (cur>0 && C.perQ[cur-1]) ? C.perQ[cur-1].rev : null;
+ const growth = (prevRev && prevRev>0) ? (r.rev-prevRev)/prevRev : null; // 销售额增长率(环比)
+ const invR = C.totalAsset>0 ? r.invVal/C.totalAsset : 0;    // 存货资产比
+ const debtR = C.totalAsset>0 ? r.debt/C.totalAsset : 0;     // 资产负债率
+ // 股价估算(模型透明估算, 非游戏官方公式): 每股净资产支撑 + 年化每股盈利×PE + 成长溢价
+ const eps = (r.net*4)/SHARES;                 // 年化每股净利
+ const bookPerShare = C.equity/SHARES;         // 每股净资产
+ const g = growth==null?0:growth;
+ const estStock = Math.max(0, STOCK_BOOKMULT*bookPerShare + STOCK_PE*eps + STOCK_GROWTHPREM*g);
+ return {gm,growth,invR,debtR,estStock,eps,bookPerShare};
 }
 
 // ===== 渲染 =====
@@ -790,16 +827,16 @@ function renderResults(){
 }
 
 // ===== 第6期夺奖目标达成度(末季期终口径) =====
+let lastEstStock=0; // 最近一次模型估算股价, 供 setStock 复用
+function effStock(){ return stockPrice!=null ? stockPrice : lastEstStock; }
 function renderGoals(C){
- const r=C.r;
- const gm = r.rev>0 ? (r.rev-r.cogsSold)/r.rev : 0;          // 毛利率
- const prevRev = (cur>0 && C.perQ[cur-1]) ? C.perQ[cur-1].rev : null;
- const growth = (prevRev && prevRev>0) ? (r.rev-prevRev)/prevRev : null; // 销售额增长率
- const invR = C.totalAsset>0 ? r.invVal/C.totalAsset : 0;    // 存货资产比
- const debtR = C.totalAsset>0 ? r.debt/C.totalAsset : 0;     // 资产负债率
+ const M=goalMetrics(C);
+ const {gm,growth,invR,debtR,estStock}=M;
+ lastEstStock=estStock;
+ const es=effStock();
  const items=[
-  {id:'goalStock', l:'期终股票价格 <span style="color:var(--faint);font-weight:500">· 游戏读数</span>', req:'≥ $168', cur:'input',
-    stat: stockPrice==null?null:stockPrice>=168},
+  {id:'goalStock', l:'期终股票价格 <span style="color:var(--faint);font-weight:500">· 模型估算</span>', req:'≥ $168', cur:'stock',
+    stat: es>=168},
   {l:'销售额增长率', req:'≥ 5%',
     cur: growth==null?'首季无对比':pct(growth), stat: growth==null?null:growth>=0.05},
   {l:'毛利率', req:'≥ 35%', cur: pct(gm), stat: gm>=0.35},
@@ -809,32 +846,40 @@ function renderGoals(C){
  let h='';
  for(const it of items){
   let cls,st;
-  if(it.stat==null){cls='wait';st=it.cur==='input'?'待填':'—';}
+  if(it.stat==null){cls='wait';st='—';}
   else if(it.stat){cls='ok';st='达标';}
   else {cls='bad';st='未达标';}
-  const cv = it.cur==='input'
-    ? `<input type="number" inputmode="decimal" min="0" step="1" placeholder="填游戏实际股价" value="${stockPrice==null?'':stockPrice}" oninput="setStock(this.value)">`
-    : `<div class="gv">${it.cur}</div>`;
-  const gr = it.id==='goalStock' ? stockHint() : ('目标 '+it.req);
+  let cv,gr;
+  if(it.cur==='stock'){
+   // 主显模型估算股价, 下方小输入可覆盖为游戏实际读数
+   cv=`<div class="gv">$${Math.round(estStock).toLocaleString()}</div>
+     <input type="number" inputmode="decimal" min="0" step="1" placeholder="填游戏实际股价(可覆盖)" value="${stockPrice==null?'':stockPrice}" oninput="setStock(this.value)" style="margin-top:7px;font-size:13px;padding:4px 8px">`;
+   gr=stockHint(estStock);
+  }else{
+   cv=`<div class="gv">${it.cur}</div>`;
+   gr='目标 '+it.req;
+  }
   h+=`<div class="goalitem ${cls}"${it.id?` id="${it.id}"`:''}><div class="gstat">${st}</div>
     <div class="gl">${it.l}</div>${cv}<div class="gr">${gr}</div></div>`;
  }
  document.getElementById('goals').innerHTML=h;
  updateGoalCount();
 }
-function stockHint(){
- if(stockPrice==null) return '≥ $168 · 从游戏读数填入(不影响财务)';
- const d=stockPrice-168;
- return d>=0 ? `目标 ≥ $168 · 已超 $${d.toLocaleString()}` : `目标 ≥ $168 · 差 $${(-d).toLocaleString()}`;
+function stockHint(est){
+ const use=effStock(); const src = stockPrice!=null ? '游戏实际' : '模型估算';
+ const d=use-168;
+ const cmp = d>=0 ? `已超 $${Math.round(d).toLocaleString()}` : `差 $${Math.round(-d).toLocaleString()}`;
+ return `目标 ≥ $168 · 用${src}值 $${Math.round(use).toLocaleString()} · ${cmp}`;
 }
 function setStock(v){
  stockPrice = (v===''||v==null) ? null : +v;
  const el=document.getElementById('goalStock'); if(!el) return;
- const ok = stockPrice!=null && stockPrice>=168;
- el.className='goalitem '+(stockPrice==null?'wait':(ok?'ok':'bad'));
- el.querySelector('.gstat').textContent = stockPrice==null?'待填':(ok?'达标':'未达标');
- const gr=el.querySelector('.gr'); if(gr) gr.textContent=stockHint();
- // 明确的即时反馈: 每次敲字都让这一格泛一圈涟漪, 不可能被当成"没反应"
+ const use=effStock();
+ const ok = use>=168;
+ el.className='goalitem '+(ok?'ok':'bad');
+ el.querySelector('.gstat').textContent = ok?'达标':'未达标';
+ const gr=el.querySelector('.gr'); if(gr) gr.textContent=stockHint(lastEstStock);
+ // 即时反馈: 每次敲字泛一圈涟漪
  el.classList.remove('pulse'); void el.offsetWidth; el.classList.add('pulse');
  updateGoalCount();
 }
@@ -843,7 +888,45 @@ function updateGoalCount(){
  const b=document.getElementById('goalCount');
  if(b) b.textContent = pass+'/5 达标'+(pass>=5?' 🎉':'');
 }
-function renderAll(){renderCtrls();renderResults();
+// ===== 标定参数 UI(显性化"已知信息") =====
+function calibField(id,label,val,step,suffix,hint){
+ return `<div class="calibitem">
+   <label>${label}</label>
+   <div class="calibrow"><input type="number" inputmode="decimal" step="${step}" value="${val}" oninput="setCalib('${id}',this.value)">${suffix?`<span class="cu">${suffix}</span>`:''}</div>
+   <div class="ch">${hint}</div>
+ </div>`;
+}
+function renderCalib(){
+ const el=document.getElementById('calibCtrls'); if(!el) return;
+ el.innerHTML =
+  calibField('COST_SCALE','成本缩放',COST_SCALE,0.01,'×','真实成本÷P26教材成本, 拿到成本表调到吻合')
+ +calibField('HP_m1','磁1 价格锚',HISTPRICE.m1,1,'$','本局磁1需求弹性基准价')
+ +calibField('HP_m2','磁2 价格锚',HISTPRICE.m2,1,'$','本局磁2需求弹性基准价')
+ +calibField('HP_m3','磁3 价格锚',HISTPRICE.m3,1,'$','本局磁3需求弹性基准价')
+ +calibField('SHARES','流通股数',SHARES,10000,'股','EPS/每股净资产的分母')
+ +calibField('STOCK_PE','市盈率倍数',STOCK_PE,0.5,'×','股价估算: ×年化EPS')
+ +calibField('STOCK_BOOKMULT','每股净资产权重',STOCK_BOOKMULT,0.1,'×','股价估算: ×每股净资产')
+ +calibField('STOCK_GROWTHPREM','增长溢价系数',STOCK_GROWTHPREM,5,'$','股价估算: 每100%销售增长加的$')
+ +calibField('START_CASH','期初现金',START_CASH,100000,'$','资产负债起点')
+ +calibField('START_EQUITY','期初权益',START_EQUITY,100000,'$','资产负债起点')
+ +calibField('START_FIXED','期初固定资产',START_FIXED,100000,'$','资产负债起点');
+}
+function setCalib(id,v){
+ const n=(v===''||v==null)?0:+v; if(isNaN(n)) return;
+ if(id==='COST_SCALE') COST_SCALE=n;
+ else if(id==='HP_m1') HISTPRICE.m1=n;
+ else if(id==='HP_m2') HISTPRICE.m2=n;
+ else if(id==='HP_m3') HISTPRICE.m3=n;
+ else if(id==='SHARES') SHARES=n||1;
+ else if(id==='STOCK_PE') STOCK_PE=n;
+ else if(id==='STOCK_BOOKMULT') STOCK_BOOKMULT=n;
+ else if(id==='STOCK_GROWTHPREM') STOCK_GROWTHPREM=n;
+ else if(id==='START_CASH') START_CASH=n;
+ else if(id==='START_EQUITY') START_EQUITY=n;
+ else if(id==='START_FIXED') START_FIXED=n;
+ renderResults(); // 重算损益/资产/五目标(不重建标定输入框以免打断输入)
+}
+function renderAll(){renderCalib();renderCtrls();renderResults();
  document.querySelectorAll('.qtab').forEach((t,i)=>t.classList.toggle('on',i===cur));}
 
 function applyPreset(t){
