@@ -226,6 +226,13 @@ tr.sub td:first-child{padding-left:16px}
   border-radius:7px;display:inline-block}
 .dimtag.prod{background:rgba(246,173,85,.14);color:var(--accent2)}
 .dimtag.sales{background:rgba(129,178,252,.14);color:#81b2fc}
+.slrow{display:flex;align-items:center;gap:9px}
+.slrow input[type=range]{flex:1;min-width:0}
+.slnum{width:82px;flex:none;background:var(--bg);border:1px solid var(--line2);border-radius:8px;
+  color:var(--txt);font-size:13px;font-weight:700;padding:5px 7px;font-family:inherit;text-align:right;
+  font-variant-numeric:tabular-nums;-moz-appearance:textfield}
+.slnum::-webkit-outer-spin-button,.slnum::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.slnum:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,209,197,.22)}
 .revgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:11px}
 @media(max-width:900px){.revgrid{grid-template-columns:repeat(2,1fr)}}
 .revitem{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:10px 12px}
@@ -767,28 +774,28 @@ function renderCtrls(){
    : `<div class="hint">达此目标需 $${needM.toFixed(2)}M 研发预算；预算够→目标落地，不够→维持上季参数(钱白花)</div>`;
  document.getElementById('prodCtrls').innerHTML=`
   <div class="ctrl"><label>研发目标-扭矩 <span>${tgtTq.toFixed(1)}</span></label>
-   <input type="range" min="1" max="5" step="0.1" value="${tgtTq}" oninput="setP('tq',this.value)"></div>
+   ${slRow('P:tq',tgtTq,1,5,0.1)}</div>
   <div class="ctrl"><label>研发目标-电阻 <span>${tgtRs.toFixed(1)}</span></label>
-   <input type="range" min="1" max="5" step="0.1" value="${tgtRs}" oninput="setP('rs',this.value)"></div>
-  <div class="ctrl"><label>研发预算 ${okFlag}<span>$${(p.rd||0).toFixed(2)}M</span></label>
-   <input type="range" min="0" max="6" step="0.05" value="${p.rd||0}" oninput="setRD(this.value)">
+   ${slRow('P:rs',tgtRs,1,5,0.1)}</div>
+  <div class="ctrl"><label>研发预算($M) ${okFlag}<span>$${(p.rd||0).toFixed(2)}M</span></label>
+   ${slRow('RD',(p.rd||0),0,6,0.05)}
    ${fundBtn}</div>`;
  let h='';
  for(let ni=0;ni<3;ni++){const x=p.nat[ni];
   h+=`<div class="natbox"><h3>${NATNAME[ni]}</h3>
    <div class="dimtag prod">🏭 生产</div>
-   <div class="ctrl"><label>产量 <span>${(x.qty/1000).toFixed(0)}K</span></label>
-    <input type="range" min="0" max="999000" step="1000" value="${x.qty}" oninput="setN(${ni},'qty',this.value)"></div>
+   <div class="ctrl"><label>产量(件) <span>${(x.qty/1000).toFixed(0)}K</span></label>
+    ${slRow('N:'+ni+':qty',x.qty,0,999000,1000)}</div>
    <div class="ctrl"><label style="font-size:11px">产地(省关税)</label>
     <div class="seg">${[0,1,2].map(s=>`<button class="${x.site===s?'on':''}" onclick="setN(${ni},'site',${s})">${NATNAME[s]}</button>`).join('')}</div>
     <div class="hint">非尤菲亚首次:+$1M安装+$100K开办</div></div>
    <div class="dimtag sales">📣 销售</div>
-   <div class="ctrl"><label>定价 <span>$${x.price}</span></label>
-    <input type="range" min="10" max="90" step="1" value="${x.price}" oninput="setN(${ni},'price',this.value)"></div>
+   <div class="ctrl"><label>定价($EU) <span>$${x.price}</span></label>
+    ${slRow('N:'+ni+':price',x.price,10,90,1)}</div>
    <div class="ctrl"><label>销售代表 <span>${x.reps}</span></label>
-    <input type="range" min="0" max="20" step="1" value="${x.reps}" oninput="setN(${ni},'reps',this.value)"></div>
-   ${pk!=='m3'?`<div class="ctrl"><label>广告 <span>$${x.ad}K</span></label>
-    <input type="range" min="0" max="999" step="5" value="${x.ad}" oninput="setN(${ni},'ad',this.value)"></div>`:'<div class="hint">磁3不打广告</div>'}
+    ${slRow('N:'+ni+':reps',x.reps,0,20,1)}</div>
+   ${pk!=='m3'?`<div class="ctrl"><label>广告($K) <span>$${x.ad}K</span></label>
+    ${slRow('N:'+ni+':ad',x.ad,0,999,5)}</div>`:'<div class="hint">磁3不打广告</div>'}
   </div>`;
  }
  document.getElementById('natCtrls').innerHTML=h;
@@ -798,11 +805,27 @@ function renderCtrls(){
  document.getElementById('prodNote').textContent='💡 '+notes[pk];
  document.getElementById('finCtrls').innerHTML=`
   <div class="ctrl"><label>组员数(管理费$200K/人/季) <span>${Q[cur].members}人</span></label>
-   <input type="range" min="1" max="6" step="1" value="${Q[cur].members}" oninput="Q[cur].members=+this.value;renderResults()"></div>
-  <div class="ctrl"><label>债务上限(信用额度) <span>$${Q[cur].debtCap}M</span></label>
-   <input type="range" min="0" max="30" step="1" value="${Q[cur].debtCap}" oninput="Q[cur].debtCap=+this.value;renderResults()">
+   ${slRow('members',Q[cur].members,1,6,1)}</div>
+  <div class="ctrl"><label>债务上限($M·信用额度) <span>$${Q[cur].debtCap}M</span></label>
+   ${slRow('debtCap',Q[cur].debtCap,0,30,1)}
    <div class="hint">债务25%/年(6.25%/季)单利·极贵；现金<$5M自动借足、>$10M自动短投8%/年</div></div>
   <div class="note">已内置：折旧2.5%/季(固定资产/40)｜库存费=期末存货10%｜所得税38%｜通胀 尤0/纳5%/尼1.25%每季累加｜产量单市场≤999K｜汇率 纳4:1/尼2:1(定价与成本均已统一为$EU口径,尼元五年从8:1升至2:1持续升值→尼市场实得改善)</div>`;
+}
+// 拖动条 + 联动数字框: range 实时(oninput), number 失焦/回车才提交(onchange)避免打字被重建打断; 两者共用 dset, renderAll 时同步回填
+function slRow(key,val,min,max,step){
+ return `<div class="slrow">
+   <input type="range" min="${min}" max="${max}" step="${step}" value="${val}" oninput="dset('${key}',this.value)">
+   <input type="number" class="slnum" min="${min}" max="${max}" step="${step}" value="${val}" onchange="dset('${key}',this.value)"></div>`;
+}
+function dset(key,v){
+ v=+v; if(isNaN(v)) return;
+ const a=key.split(':');
+ if(a[0]==='P') Q[cur].prod[PKEY[curP]][a[1]]=v;
+ else if(a[0]==='RD') Q[cur].prod[PKEY[curP]].rd=v;
+ else if(a[0]==='N') Q[cur].prod[PKEY[curP]].nat[+a[1]][a[2]]=v;
+ else if(a[0]==='members') Q[cur].members=v;
+ else if(a[0]==='debtCap') Q[cur].debtCap=v;
+ renderAll();
 }
 function setP(k,v){Q[cur].prod[PKEY[curP]][k]=+v;renderAll();}
 function setRD(v){Q[cur].prod[PKEY[curP]].rd=+v;renderAll();}
@@ -884,6 +907,38 @@ function renderResults(){
  document.getElementById('detail').innerHTML=dh;
  renderGoals(C);
  renderQtabs();
+ persist();
+}
+
+// ===== 决策/标定/目标持久化: 刷新不丢失 =====
+const LS_KEY='techmark_state_v1';
+function persist(){
+ try{ localStorage.setItem(LS_KEY, JSON.stringify({
+  Q,STRATEGY,cur,curP,stockPrice,
+  COST_SCALE,HISTPRICE,SHARES,STOCK_PE,STOCK_BOOKMULT,STOCK_GROWTHPREM,
+  START_CASH,START_EQUITY,START_FIXED,REV_T
+ })); }catch(e){}
+}
+function restore(){
+ try{
+  const s=localStorage.getItem(LS_KEY); if(!s) return;
+  const o=JSON.parse(s);
+  if(Array.isArray(o.Q)&&o.Q.length===6) Q=o.Q;
+  if(o.STRATEGY) STRATEGY=o.STRATEGY;
+  if(typeof o.cur==='number') cur=o.cur;
+  if(typeof o.curP==='number') curP=o.curP;
+  stockPrice=(o.stockPrice===null||typeof o.stockPrice==='number')?o.stockPrice:stockPrice;
+  if(typeof o.COST_SCALE==='number') COST_SCALE=o.COST_SCALE;
+  if(o.HISTPRICE&&typeof o.HISTPRICE==='object') HISTPRICE=o.HISTPRICE;
+  if(typeof o.SHARES==='number') SHARES=o.SHARES;
+  if(typeof o.STOCK_PE==='number') STOCK_PE=o.STOCK_PE;
+  if(typeof o.STOCK_BOOKMULT==='number') STOCK_BOOKMULT=o.STOCK_BOOKMULT;
+  if(typeof o.STOCK_GROWTHPREM==='number') STOCK_GROWTHPREM=o.STOCK_GROWTHPREM;
+  if(typeof o.START_CASH==='number') START_CASH=o.START_CASH;
+  if(typeof o.START_EQUITY==='number') START_EQUITY=o.START_EQUITY;
+  if(typeof o.START_FIXED==='number') START_FIXED=o.START_FIXED;
+  if(o.REV_T&&typeof o.REV_T==='object') REV_T=o.REV_T;
+ }catch(e){}
 }
 
 // ===== 第6期夺奖目标达成度(末季期终口径) =====
@@ -941,7 +996,7 @@ function setStock(v){
  const gr=el.querySelector('.gr'); if(gr) gr.textContent=stockHint(lastEstStock);
  // 即时反馈: 每次敲字泛一圈涟漪
  el.classList.remove('pulse'); void el.offsetWidth; el.classList.add('pulse');
- updateGoalCount();
+ updateGoalCount(); persist();
 }
 function updateGoalCount(){
  const pass=document.querySelectorAll('#goals .goalitem.ok').length;
@@ -993,14 +1048,14 @@ let lastPreReverse=null; // 倒推前快照, 供还原
 function renderRevTargets(){
  const el=document.getElementById('revTargets'); if(!el) return;
  const f=(id,label,val,step,suf)=>`<div class="revitem"><label>${label}</label>
-   <div class="calibrow"><input type="number" step="${step}" value="${val}" oninput="REV_T.${id}=+this.value"><span class="cu">${suf}</span></div></div>`;
+   <div class="calibrow"><input type="number" step="${step}" value="${val}" oninput="REV_T.${id}=+this.value;persist()"><span class="cu">${suf}</span></div></div>`;
  el.innerHTML =
   f('stock','期终股票价格 ≥',REV_T.stock,1,'$')
  +f('growth','销售额增长率 ≥',REV_T.growth,0.5,'%')
  +f('gm','毛利率 ≥',REV_T.gm,1,'%')
  +`<div class="revitem"><label>存货资产比 区间</label><div class="calibrow">
-    <input type="number" step="0.5" value="${REV_T.invLo}" oninput="REV_T.invLo=+this.value"><span class="cu">~</span>
-    <input type="number" step="0.5" value="${REV_T.invHi}" oninput="REV_T.invHi=+this.value"><span class="cu">%</span></div></div>`
+    <input type="number" step="0.5" value="${REV_T.invLo}" oninput="REV_T.invLo=+this.value;persist()"><span class="cu">~</span>
+    <input type="number" step="0.5" value="${REV_T.invHi}" oninput="REV_T.invHi=+this.value;persist()"><span class="cu">%</span></div></div>`
  +f('debt','资产负债率 ≤',REV_T.debt,1,'%');
 }
 function snapState(){ return JSON.stringify({Q:Q,STRATEGY:STRATEGY,cur:cur}); }
@@ -1124,7 +1179,7 @@ function applyPreset(t){
   cur=5;curP=1;selProd(1);renderAll();return;
  }
 }
-selProd(1);renderAll();
+restore();selProd(curP);renderAll();
 
 function showPage(id,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
