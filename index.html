@@ -454,16 +454,19 @@ function rdCost(pk,fromTq,fromRs,toTq,toRs){
  return (0.55*d+0.05)*1e6; // 变1.0→$0.6M, 变2.0→$1.15M, 满量程8.0→$4.5M...拟合经验值
 }
 // 返回本季生效参数 + 研发是否成功
+// 关键: p.tq/p.rs 永远是"用户设的目标", 预算不足时不再被覆盖(滑块不弹回);
+// 真正喂给销量模型的是"生效参数" p._eff — 预算够才追上目标, 不够则停在上季生效值
 function resolveParam(pk){
  let prev=PARAM_INIT[pk].slice();
  for(let q=0;q<=cur;q++){
   const p=Q[q].prod[pk];
-  if(p.tq==null){ p.tq=prev[0]; p.rs=prev[1]; } // 未设=沿用上季
+  if(p.tq==null){ p.tq=prev[0]; p.rs=prev[1]; } // 未设=沿用上季(等于把目标定在继承值)
   const need=rdCost(pk,prev[0],prev[1],p.tq,p.rs);
   const budget=(p.rd||0)*1e6;
-  if(need>0 && budget>=need){ prev=[p.tq,p.rs]; p._ok=true; p._need=need; }
-  else if(need>0){ p.tq=prev[0]; p.rs=prev[1]; p._ok=false; p._need=need; } // 失败:参数不变,钱白花
-  else { p._ok=true; p._need=0; prev=[p.tq,p.rs]; }
+  if(need<=0){ p._ok=true; p._need=0; prev=[p.tq,p.rs]; }         // 无需研发(目标≈上季)
+  else if(budget>=need){ p._ok=true; p._need=need; prev=[p.tq,p.rs]; } // 预算够: 目标生效
+  else { p._ok=false; p._need=need; }                             // 预算不足: 生效值维持prev, 但目标不动
+  p._eff=prev.slice(); // 本季真正生效的参数(销量按它算)
  }
  return prev;
 }
@@ -500,8 +503,10 @@ function priceFactor(price,pk){
 }
 function matchScore(pk,ni,q){
  const id=IDEAL[pk][q][ni], p=Q[q].prod[pk];
- const dt=(p.tq!=null?p.tq:PARAM_INIT[pk][0])-id[0];
- const dr=(p.rs!=null?p.rs:PARAM_INIT[pk][1])-id[1];
+ // 用"生效参数"_eff算匹配度(预算不足时=上季生效值), 而非用户目标tq/rs
+ const eff=p._eff||[(p.tq!=null?p.tq:PARAM_INIT[pk][0]),(p.rs!=null?p.rs:PARAM_INIT[pk][1])];
+ const dt=eff[0]-id[0];
+ const dr=eff[1]-id[1];
  let dist=Math.sqrt(dt*dt+dr*dr);
  // 广告领先者效应(P16): 高广告投入把"理想产品"往自己拉,等效于缩短参数距离
  if(pk!=='m3' && ni<3){
@@ -656,15 +661,23 @@ function selProd(i){curP=i;document.querySelectorAll('.mtab').forEach(t=>t.class
 function renderCtrls(){
  const pk=PKEY[curP],p=Q[cur].prod[pk];
  resolveParam(pk);
- const okFlag=p._need>0?(p._ok?'<span class="flag ok">研发成功</span>':'<span class="flag bad">预算不足·失败</span>'):'';
+ const tgtTq=(p.tq!=null?p.tq:PARAM_INIT[pk][0]), tgtRs=(p.rs!=null?p.rs:PARAM_INIT[pk][1]);
+ const eff=p._eff||[tgtTq,tgtRs];
+ const needM=(p._need||0)/1e6;
+ const okFlag=p._need>0?(p._ok?'<span class="flag ok">已生效</span>':'<span class="flag bad">未生效·预算差 $'+Math.max(0,needM-(p.rd||0)).toFixed(2)+'M</span>'):'';
+ // 目标未生效时: 说明当前销量按哪套参数算, 并给一键补足
+ const fundBtn = (p._need>0 && !p._ok)
+   ? `<div class="hint" style="color:var(--red)">⚠️ 研发预算不足，本季销量仍按<b>生效参数 扭${eff[0].toFixed(1)}/阻${eff[1].toFixed(1)}</b>计算（你设的目标尚未落地）
+      <button onclick="fundRD()" style="margin-top:6px;display:block;width:100%;padding:7px;border:none;border-radius:8px;background:linear-gradient(90deg,#4fd1c5,#38a89d);color:#06221f;font-weight:800;font-family:inherit;cursor:pointer">▶ 补足到 $${Math.min(6,needM).toFixed(2)}M 让目标生效</button></div>`
+   : `<div class="hint">达此目标需 $${needM.toFixed(2)}M 研发预算；预算够→目标落地，不够→维持上季参数(钱白花)</div>`;
  document.getElementById('prodCtrls').innerHTML=`
-  <div class="ctrl"><label>研发目标-扭矩 <span>${(p.tq!=null?p.tq:PARAM_INIT[pk][0]).toFixed(1)}</span></label>
-   <input type="range" min="1" max="5" step="0.1" value="${p.tq!=null?p.tq:PARAM_INIT[pk][0]}" oninput="setP('tq',this.value)"></div>
-  <div class="ctrl"><label>研发目标-电阻 <span>${(p.rs!=null?p.rs:PARAM_INIT[pk][1]).toFixed(1)}</span></label>
-   <input type="range" min="1" max="5" step="0.1" value="${p.rs!=null?p.rs:PARAM_INIT[pk][1]}" oninput="setP('rs',this.value)"></div>
+  <div class="ctrl"><label>研发目标-扭矩 <span>${tgtTq.toFixed(1)}</span></label>
+   <input type="range" min="1" max="5" step="0.1" value="${tgtTq}" oninput="setP('tq',this.value)"></div>
+  <div class="ctrl"><label>研发目标-电阻 <span>${tgtRs.toFixed(1)}</span></label>
+   <input type="range" min="1" max="5" step="0.1" value="${tgtRs}" oninput="setP('rs',this.value)"></div>
   <div class="ctrl"><label>研发预算 ${okFlag}<span>$${(p.rd||0).toFixed(2)}M</span></label>
    <input type="range" min="0" max="6" step="0.05" value="${p.rd||0}" oninput="setRD(this.value)">
-   <div class="hint">本季需 $${(p._need/1e6||0).toFixed(2)}M 才能达标；预算不足=参数不变、钱白花</div></div>`;
+   ${fundBtn}</div>`;
  let h='';
  for(let ni=0;ni<3;ni++){const x=p.nat[ni];
   h+=`<div class="natbox"><h3>${NATNAME[ni]}</h3>
@@ -696,6 +709,13 @@ function renderCtrls(){
 }
 function setP(k,v){Q[cur].prod[PKEY[curP]][k]=+v;renderAll();}
 function setRD(v){Q[cur].prod[PKEY[curP]].rd=+v;renderAll();}
+// 一键把研发预算补到"让当前目标生效"所需, 目标随即落地、销量/利润联动变化
+function fundRD(){
+ const p=Q[cur].prod[PKEY[curP]]; resolveParam(PKEY[curP]);
+ const needM=(p._need||0)/1e6;
+ p.rd=Math.min(6, Math.ceil(needM/0.05)*0.05); // 对齐滑块步长, 封顶$6M
+ renderAll();
+}
 function setN(ni,k,v){Q[cur].prod[PKEY[curP]].nat[ni][k]=+v;renderAll();}
 
 function renderResults(){
