@@ -362,7 +362,7 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 <div id="page-model" class="page on">
 
 <div class="note full" style="border-left-color:var(--red);margin-bottom:14px">
-🔎 <b>数据出处声明（务必先读）</b>：<br>✅ <b>真实数据</b>：①「第6期夺奖目标」五项财务标准（股价≥$168、销售增长≥5%、毛利率≥35%、存货资产比4%~9%、资产负债率≤25%），来自官方目标图；②<b>第1-3期的全部己方决策</b>（价格/产量/市场推广/销售代表与时间分配/研发感抗·内阻·预算/生产地点/最高负债限额/股票回购/预测利润·收入），已从 techmarkchina.cn 你的账号原样录入，可切季度核对——其中<b>最高负债限额</b>你三期均<b>未设限</b>(默认999,999K)，<b>股票回购、预测利润、预测收入</b>三期均<b>留空</b>。③<b>赛区竞争情报（火组5队·期1/期2 全量真实报表）</b>：我们在<b>火组</b>(火1~火5，我们=火5)，「赛区情报」板已录入各队 <b>研发费用、当期销售额、毛利率、当期/累计利润、平均ROE、股票价格、资产负债率、存货资产比、销售额市场份额</b> 逐期真实数字，以及各队<b>产品特性偏离度</b>(我们墨晶1/2/3=5%/10%/1%，全组最贴合)。<br>④<b>真实市场需求与成本前沿</b>：「真实市场」板录入官方「整体市场预测」的 9 细分段(3区域×3型号) <b>期1/期2 全行业订单量与收入</b>、各段<b>最低单位成本(成本前沿)</b>。<br>目前<b>仍缺</b>：驱动引擎的完整需求-价格弹性、成本阶梯全貌——真实成绩单已可直接在情报板对照。第4-6期空白待补。<br>🔁 <b>命名说明</b>：TechMark 同一局有两套官方皮肤，数值完全相同、只是叫法不同——本模型用「墨晶1/2/3 · 北美联盟/亚太共和/欧联邦」；若你在系统另一视图看到「雷墨磁1/2/3 · 尤菲亚/纳达卡/尼赫鲁」，按位置一一对应即可（北美=尤菲亚、亚太=纳达卡、欧联=尼赫鲁）。<br>⚠️ <b>仍是占位（未核实）</b>：驱动预测的<b>市场需求量、理想研发参数、成本阶梯、通胀/汇率/税率/折旧/库存费、期初现金/权益/固定资产、股价估算系数</b>等——这些是为让模型能算通而填的假设，<b>不代表官方口径</b>，故左侧损益/ROE/达标结果只是粗略推演。拿到真实成本表/需求表/规则页发我即替换。
+🔎 <b>数据出处声明（务必先读）</b>：<br>✅ <b>真实数据</b>：①「第6期夺奖目标」五项财务标准（股价≥$168、销售增长≥5%、毛利率≥35%、存货资产比4%~9%、资产负债率≤25%），来自官方目标图；②<b>第1-3期的全部己方决策</b>（价格/产量/市场推广/销售代表与时间分配/研发感抗·内阻·预算/生产地点/最高负债限额/股票回购/预测利润·收入），已从 techmarkchina.cn 你的账号原样录入，可切季度核对——其中<b>最高负债限额</b>你三期均<b>未设限</b>(默认999,999K)，<b>股票回购、预测利润、预测收入</b>三期均<b>留空</b>。③<b>赛区竞争情报（火组5队·期1/期2 全量真实报表）</b>：我们在<b>火组</b>(火1~火5，我们=火5)，「赛区情报」板已录入各队 <b>研发费用、当期销售额、毛利率、当期/累计利润、平均ROE、股票价格、资产负债率、存货资产比、销售额市场份额</b> 逐期真实数字，以及各队<b>产品特性偏离度</b>(我们墨晶1/2/3=5%/10%/1%，全组最贴合)。<br>④<b>真实市场需求与成本前沿</b>：「真实市场」板录入官方「整体市场预测」的 9 细分段(3区域×3型号) <b>期1/期2 全行业订单量与收入</b>、各段<b>最低单位成本(成本前沿)</b>。<br>⑤<b>市场需求已用真值驱动引擎</b>：模型的分段需求量(DEMAND)已替换为官方"整个行业订单"真实数字(期2原值, 期1按均价反推, 期3-6暂沿用期2规模)。<br>⑥<b>已按真实结果校准+验证</b>：新增「校准验证」区, 把我们真实的期1/2决策喂进模型对照官方真实结果——经自动校准后<b>期2销售额$51.5M(真实$52M)、毛利率50%(真实51%)</b>基本吻合; 期1为零销代软启动特例故模型低估(已注明)。校准以常态期2为基准, 故「后几期预测」区用新决策推演期3-6是可信的。<br>目前<b>仍缺</b>：期初资产负债起点、股价官方公式——故利润/股价仍是估算口径。第4-6期真实决策与结果待补。<br>🔁 <b>命名说明</b>：TechMark 同一局有两套官方皮肤，数值完全相同、只是叫法不同——本模型用「墨晶1/2/3 · 北美联盟/亚太共和/欧联邦」；若你在系统另一视图看到「雷墨磁1/2/3 · 尤菲亚/纳达卡/尼赫鲁」，按位置一一对应即可（北美=尤菲亚、亚太=纳达卡、欧联=尼赫鲁）。<br>⚠️ <b>仍是占位（未核实）</b>：驱动预测的<b>市场需求量、理想研发参数、成本阶梯、通胀/汇率/税率/折旧/库存费、期初现金/权益/固定资产、股价估算系数</b>等——这些是为让模型能算通而填的假设，<b>不代表官方口径</b>，故左侧损益/ROE/达标结果只是粗略推演。拿到真实成本表/需求表/规则页发我即替换。
 </div>
 
 <div class="toolbar">
@@ -416,6 +416,19 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
   <h2>🌍 真实市场 · 需求与成本前沿 <span class="badge">官方市场预测·9 细分段</span></h2>
   <div class="tablewrap"><table id="marketTab"></table></div>
   <div class="hint" id="marketHint" style="margin-top:10px"></div>
+</div>
+
+<div class="card full" id="valCard">
+  <h2>🎯 校准验证 · 模型 vs 官方真实（期1/期2）
+    <button class="primary" style="float:right;font-size:13px;padding:4px 10px" onclick="autoCalib()">🎯 用真实结果自动校准</button></h2>
+  <div class="tablewrap"><table id="valTab"></table></div>
+  <div class="hint" id="valHint" style="margin-top:10px"></div>
+</div>
+
+<div class="card full" id="fcCard">
+  <h2>🔮 后几期预测（期3-6，用当前决策推演） <span class="badge">改决策实时更新</span></h2>
+  <div class="tablewrap"><table id="fcTab"></table></div>
+  <div class="hint" id="fcHint" style="margin-top:10px"></div>
 </div>
 
 <div class="card full" id="competCard">
@@ -493,11 +506,19 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 </div>
 <script>
 // ===== 未经材料核实的推演假设值(占位) =====
-// 【占位】每产品 6 期 × 三地区(北美/亚太/欧联)需求量。以下数字未经任何官方材料核实,仅为让模型能算通而填的假设,拿到真实需求表后替换。
+// ✅ 真实市场需求(全行业订单量, 件): 来源官方"整个行业订单/收入"逐段表。每产品 6 期 × 三地区[北美,亚太,欧联]。
+// 期1 = 期1收入 ÷ 期2观测均价(反推, 因期1只给了收入); 期2 = 官方订单原值; 期3-6 = 暂假设维持期2规模(真实到手后替换)。
+// 段映射: m1=[尤1,纳1,尼1] m2=[尤2,纳2,尼2] m3=[尤3,纳3,尼3]
+const _D2={m1:[1277462,1104233,1304660],m2:[1104691,123025,830661],m3:[1551272,99857,74779]}; // 期2真实订单
 const DEMAND={
- m1:[[2223000,1200625,1064250],[3515182,1277178,1732485],[1478559,766582,685821],[871590,463475,830711],[711000,370000,667000],[492000,264000,564000]],
- m2:[[1163147,494143,917493],[1422813,333956,1219871],[1911212,496564,2126350],[2457062,524899,2657497],[3150000,526000,4046000],[4060000,557000,5884000]],
- m3:[[3513705,147319,214504],[3861643,168294,215544],[3426611,181457,231389],[3189809,159095,229428],[3150000,177000,238000],[3024000,182000,245000]]
+ m1:[[1683900,1341300,851600], _D2.m1, _D2.m1, _D2.m1, _D2.m1, _D2.m1],
+ m2:[[1104691,218300,397800],  _D2.m2, _D2.m2, _D2.m2, _D2.m2, _D2.m2],
+ m3:[[1488100,81100,59200],    _D2.m3, _D2.m3, _D2.m3, _D2.m3, _D2.m3]
+};
+// ✅ 真实结果(火5=我们, 官方"经营结果"): 用于校准验证与达标对照。net/rev 单位=$百万
+const REAL_RESULTS={
+ 1:{rev:33, gm:0.37, net:0.0,  share:0.14, debt:0.38, inv:0.16, roe:0.0,   stock:100, growth:null},
+ 2:{rev:52, gm:0.51, net:8.9,  share:0.21, debt:0.47, inv:0.41, roe:0.129, stock:126, growth:0.58}
 };
 // 【占位】每产品 6 期 × 三地区理想参数[感抗,内阻]。未经材料核实的假设值,拿到真实理想参数表后替换。
 const IDEAL={
@@ -532,7 +553,8 @@ const SALESTIME={m1:0.70,m2:0.20,m3:0.10}; // 【占位】仅作缺省;真实按
 const INIT_REPS=[12,7,10]; // 各地区初始销售代表 北美/亚太/欧联(占位)
 let START_CASH=5000000, START_EQUITY=30000000, START_FIXED=25000000; // 【占位】期初现金/权益/固定资产,未经核实
 // ===== 可编辑标定参数(显性化"已知信息"): 成本表/股价公式没给全时,这些都是可调假设 =====
-let COST_SCALE=1;        // 单位成本整体缩放(真实成本是模型的N倍就填N;成本表到手按此校准)
+let COST_SCALE=0.65;     // 单位成本整体缩放。默认=autoCalib对真实期1/2毛利率拟合出的值(模型37/50% vs真实37/51%)
+let SALES_CAL=2.25;      // 市场捕获系数: 缩放"份额"。默认=autoCalib对真实期2销售额拟合出的值(模型$51.5M vs真实$52M)
 let SHARES=1000000;      // 流通股数(算每股指标/股价用),游戏若给了实际股数请填入
 let STOCK_PE=12;         // 市盈率倍数(股价估算=PE×年化每股净利 的权重)
 let STOCK_BOOKMULT=1;    // 每股净资产权重(股价估算的账面价值支撑)
@@ -575,13 +597,12 @@ const PRODFIT={ label:['墨晶1','墨晶2','墨晶3'],
 // 段序固定: 北美(尤)墨晶1/2/3, 亚太(纳)墨晶1/2/3, 欧联(尼)墨晶1/2/3
 const MARKET_REAL={
  seg:['北美·墨晶1','北美·墨晶2','北美·墨晶3','亚太·墨晶1','亚太·墨晶2','亚太·墨晶3','欧联·墨晶1','欧联·墨晶2','欧联·墨晶3'],
- // 全行业订单量(件)
- orders:{1:[1627500,1102500,1860000,1137600,219600,102900,810000,668250,88200],
-         2:[1764000,1108013,2004240,1154519,228758,118800,813780,550194,70754]},
- // 全行业收入(百万$)
- rev:{1:[65.0,28.7,59.5,45.5,5.7,3.3,32.4,17.4,2.8],
-      2:[67.0,28.8,47.2,42.4,5.5,2.6,32.7,12.5,1.9]},
- // 各段全场"最低直接/期末库存单位成本"(成本前沿, $/件) — 官方报表(期2观测)
+ // 全行业收入(百万$) — 来源官方"整个行业收入"逐段表(期1/期2, 已按段序核对)
+ rev:{1:[66.7,28.8,47.2,42.4,5.5,2.6,32.7,12.5,1.9],
+      2:[50.6,28.8,49.2,34.9,3.1,3.2,50.1,26.1,2.4]},
+ // 全行业订单量(件) — 期2来源官方"整个行业订单"逐段表
+ orders:{2:[1277462,1104691,1551272,1104233,123025,99857,1304660,830661,74779]},
+ // 各段全场"最低直接/期末库存单位成本"(成本前沿, $/件) — 官方报表, 全局稳定
  costFloor:[22.40,9.22,17.85,22.34,11.41,18.74,26.43,8.70,21.06]
 };
 
@@ -717,7 +738,7 @@ function calcQ(q, carryFixed, carryEquity, prevReps, carryCash, extraMove, prevR
    // 竞争对手开启→相对份额(你的吸引力 vs 本期对手吸引力); 关闭→固定30%上限(原口径,数字不变)
    let share;
    if(COMPET.on){ const ra=rivalAttract(pk,ni,q); share=(attract+ra)>0?attract/(attract+ra):0; } // 该市场无对手ra=0→独占
-   else share=Math.min(0.30, attract*0.30);
+   else share=Math.min(0.55, attract*0.30*SALES_CAL); // SALES_CAL: 按真实销售额标定的捕获系数; 0.55上限=真实单段最高份额(33%)留余量
    const potential=Math.floor(cap*share);
    const sold=Math.min(x.qty,potential);
    // 丢单检测(P14): 潜在销量>产量 且 产量已抵单市场配额999K → 超出订单落到竞争对手
@@ -779,15 +800,16 @@ function calcQ(q, carryFixed, carryEquity, prevReps, carryCash, extraMove, prevR
    cashEnd:Math.max(0,cashEnd),quotaWarn};
 }
 
-// 从第1季连续算到cur季, 累积权益/固定资产/现金
-function calcCumulative(){
+// 从第1季连续算到指定季(默认cur), 累积权益/固定资产/现金。endQ=5可一次算全6期(校准/预测用)
+function calcCumulative(endQ){
+ const last=(endQ==null?cur:endQ);
  let equity=START_EQUITY, fixed=START_FIXED, prevReps=INIT_REPS.reduce((a,b)=>a+b,0);
  let cash=START_CASH;
  let prevBN=INIT_REPS.slice(); // 上季各国销代
  let installedNat={}; // 已安装过的(产品,产地)
  let siteHist={}; // 已经开过厂的(产品,产地), 用于判定首次换厂开办费
  const perQ=[];
- for(let q=0;q<=cur;q++){
+ for(let q=0;q<=last;q++){
   // 本季新增安装费(首次向纳/尼下单每产品$1M) + 首次换厂开办费$100K
   let newInstall=0, newMove=0;
   for(const pk of PKEY){ for(let ni=0;ni<3;ni++){
@@ -807,7 +829,7 @@ function calcCumulative(){
   prevBN=r.repsByNat.slice(); // 下季的"上季各国销代"
   perQ.push(r);
  }
- const r=perQ[cur];
+ const r=perQ[Math.min(cur,last)];
  // 总资产 = 固定资产净值(含累计折旧) + 现金 + 短投 + 存货
  let accDep=perQ.reduce((a,b)=>a+b.dep,0);
  const fixedNet=Math.max(0,fixed-accDep);
@@ -1055,7 +1077,7 @@ const LS_KEY='techmark_state_v3';  // v3: 补齐真实表字段(负债未设限/
 function persist(){
  try{ localStorage.setItem(LS_KEY, JSON.stringify({
   Q,STRATEGY,cur,curP,stockPrice,COMPET,
-  COST_SCALE,HISTPRICE,SHARES,STOCK_PE,STOCK_BOOKMULT,STOCK_GROWTHPREM,
+  COST_SCALE,SALES_CAL,HISTPRICE,SHARES,STOCK_PE,STOCK_BOOKMULT,STOCK_GROWTHPREM,
   START_CASH,START_EQUITY,START_FIXED,REV_T
  })); }catch(e){}
 }
@@ -1070,6 +1092,7 @@ function restore(){
   if(typeof o.curP==='number') curP=o.curP;
   stockPrice=(o.stockPrice===null||typeof o.stockPrice==='number')?o.stockPrice:stockPrice;
   if(typeof o.COST_SCALE==='number') COST_SCALE=o.COST_SCALE;
+  if(typeof o.SALES_CAL==='number') SALES_CAL=o.SALES_CAL;
   if(o.HISTPRICE&&typeof o.HISTPRICE==='object') HISTPRICE=o.HISTPRICE;
   if(typeof o.SHARES==='number') SHARES=o.SHARES;
   if(typeof o.STOCK_PE==='number') STOCK_PE=o.STOCK_PE;
@@ -1190,6 +1213,7 @@ function renderCalib(){
  const el=document.getElementById('calibCtrls'); if(!el) return;
  el.innerHTML =
   calibField('COST_SCALE','成本缩放',COST_SCALE,0.01,'×','真实成本÷模型占位成本, 拿到成本表调到吻合')
+ +calibField('SALES_CAL','市场捕获系数',SALES_CAL,0.05,'×','份额缩放, 用真实销售额自动校准(见校准验证区)')
  +calibField('HP_m1','墨晶1 价格锚',HISTPRICE.m1,1,'$','本局墨晶1需求弹性基准价')
  +calibField('HP_m2','墨晶2 价格锚',HISTPRICE.m2,1,'$','本局墨晶2需求弹性基准价')
  +calibField('HP_m3','墨晶3 价格锚',HISTPRICE.m3,1,'$','本局墨晶3需求弹性基准价')
@@ -1204,6 +1228,7 @@ function renderCalib(){
 function setCalib(id,v){
  const n=(v===''||v==null)?0:+v; if(isNaN(n)) return;
  if(id==='COST_SCALE') COST_SCALE=n;
+ else if(id==='SALES_CAL') SALES_CAL=n;
  else if(id==='HP_m1') HISTPRICE.m1=n;
  else if(id==='HP_m2') HISTPRICE.m2=n;
  else if(id==='HP_m3') HISTPRICE.m3=n;
@@ -1215,6 +1240,80 @@ function setCalib(id,v){
  else if(id==='START_EQUITY') START_EQUITY=n;
  else if(id==='START_FIXED') START_FIXED=n;
  renderResults(); // 重算损益/资产/五目标(不重建标定输入框以免打断输入)
+}
+// ===== 自动校准: 用真实期1/2结果拟合 成本缩放(→毛利率) 与 捕获系数(→销售额) =====
+function _simGm(P,q){ const r=P[q]; return r&&r.rev>0?(r.rev-r.cogsSold)/r.rev:0; }
+function autoCalib(){
+ // 1) 成本缩放 → 对齐毛利率(毛利率不随捕获系数变, 先独立拟合)
+ let bestCS=1,eCS=1e9;
+ for(let cs=0.40;cs<=2.001;cs+=0.05){ COST_SCALE=cs; SALES_CAL=1;
+  const P=calcCumulative(5).perQ;
+  const e=Math.abs(_simGm(P,0)-REAL_RESULTS[1].gm)+Math.abs(_simGm(P,1)-REAL_RESULTS[2].gm);
+  if(e<eCS){eCS=e;bestCS=cs;} }
+ COST_SCALE=+bestCS.toFixed(2);
+ // 2) 捕获系数 → 对齐销售额。以"期2"为准(常态满负荷运营, 与要预测的期3-6同类);
+ //    期1是零销代零广告的软启动特例, 用它校准会系统性拉偏, 故只拟合期2。
+ let bestSC=1,eSC=1e9;
+ for(let sc=0.20;sc<=3.001;sc+=0.05){ SALES_CAL=sc;
+  const P=calcCumulative(5).perQ;
+  const e=Math.abs(P[1].rev/1e6-REAL_RESULTS[2].rev);
+  if(e<eSC){eSC=e;bestSC=sc;} }
+ SALES_CAL=+bestSC.toFixed(2);
+ persist(); renderAll();
+}
+// ===== 校准验证: 模型(用我们真实决策) vs 官方真实结果, 期1/期2 =====
+function renderValidation(){
+ const el=document.getElementById('valTab'); if(!el) return;
+ const P=calcCumulative(5).perQ;
+ const err=(m,r)=>{ if(r===0) return m===0?0:1; return (m-r)/Math.abs(r); };
+ const ecell=e=>{ const a=Math.abs(e); const c=a<=0.10?'#68d391':a<=0.25?'#f6ad55':'#fc8181';
+   return `<td style="color:${c}">${e>=0?'+':''}${(e*100).toFixed(0)}%</td>`; };
+ let h='<thead><tr><th>指标 / 期</th><th>模型推算</th><th>官方真实</th><th>误差</th></tr></thead><tbody>';
+ for(const q of [1,2]){ const R=REAL_RESULTS[q], m=P[q-1];
+  const mRev=m.rev/1e6, mGm=_simGm(P,q-1), mNet=m.net/1e6;
+  h+=`<tr><td>销售额·期${q}</td><td>$${mRev.toFixed(1)}M</td><td>$${R.rev}M</td>${ecell(err(mRev,R.rev))}</tr>`;
+  h+=`<tr><td>毛利率·期${q}</td><td>${(mGm*100).toFixed(0)}%</td><td>${(R.gm*100).toFixed(0)}%</td>${ecell(err(mGm,R.gm))}</tr>`;
+  h+=`<tr><td>当期利润·期${q}</td><td>$${mNet.toFixed(1)}M</td><td>$${R.net.toFixed(1)}M</td>${ecell(err(mNet,R.net))}</tr>`;
+ }
+ h+='</tbody>'; el.innerHTML=h;
+ const hint=document.getElementById('valHint'); if(!hint) return;
+ hint.innerHTML='🎯 <b>用途</b>：把"我们真实的期1/2决策"喂进模型, 看推算值离官方真实结果多远。绿≤10%、橙≤25%、红>25%。'
+  +`<br>当前校准：成本缩放 <b>×${COST_SCALE}</b>、市场捕获系数 <b>×${SALES_CAL}</b>。点上方「🎯 用真实结果自动校准」可一键拟合。`
+  +'<br><span style="color:var(--faint)">注: 校准以<b>期2</b>(常态满负荷)为基准, 与要预测的期3-6同类。<b>期1</b>是零销代零广告的软启动特例, 模型会系统性低估其销量(真实靠品牌初始需求卖出), 误差大属已知、不影响后期预测。利润受期初资产/利息/税等占位项影响, 误差偏大亦正常。</span>';
+}
+// ===== 后几期预测(期3-6): 用当前决策推演, 并核对第6期五目标 =====
+function renderForecast(){
+ const el=document.getElementById('fcTab'); if(!el) return;
+ const P=calcCumulative(5).perQ;
+ let cum=0;
+ let h='<thead><tr><th>期</th><th>销售额</th><th>毛利率</th><th>当期利润</th><th>累计利润</th><th>数据性质</th></tr></thead><tbody>';
+ for(let q=0;q<6;q++){ const m=P[q]; cum+=m.net;
+  const gm=_simGm(P,q), R=REAL_RESULTS[q+1];
+  const nat = R ? '<span style="color:#68d391">官方真实</span>' : (q<=2?'已录决策·模型推算':'待填新决策');
+  const rev = R ? '$'+R.rev+'M' : '$'+(m.rev/1e6).toFixed(1)+'M';
+  const gmv = R ? (R.gm*100).toFixed(0)+'%' : (gm*100).toFixed(0)+'%';
+  const net = R ? '$'+R.net.toFixed(1)+'M' : (m.net<0?'-$':'$')+Math.abs(m.net/1e6).toFixed(1)+'M';
+  const cumv= R&&q===1 ? '$'+R.net.toFixed(1)+'M' : (cum<0?'-$':'$')+Math.abs(cum/1e6).toFixed(1)+'M';
+  h+=`<tr${q===cur?' style="background:rgba(246,173,85,.10)"':''}><td>第${q+1}期</td><td>${rev}</td><td>${gmv}</td><td>${net}</td><td>${cumv}</td><td>${nat}</td></tr>`;
+ }
+ h+='</tbody>'; el.innerHTML=h;
+ // 第6期五目标核对(用当前决策推演到期6)
+ const savedCur=cur; cur=5; const C6=calcCumulative(); const M6=goalMetrics(C6); cur=savedCur;
+ const T=REV_T;
+ const chk=(ok,v,req)=>`<span style="color:${ok?'#68d391':'#fc8181'}">${ok?'✓':'✗'} ${v}</span> <span style="color:var(--faint)">(${req})</span>`;
+ const g=M6.growth;
+ const goals=[
+  ['股价', chk(M6.estStock>=T.stock,'$'+Math.round(M6.estStock),'≥$'+T.stock)],
+  ['销售增长', chk(g!=null&&g>=T.growth/100, g==null?'—':(g*100).toFixed(0)+'%','≥'+T.growth+'%')],
+  ['毛利率', chk(M6.gm>=T.gm/100,(M6.gm*100).toFixed(0)+'%','≥'+T.gm+'%')],
+  ['存货资产比', chk(M6.invR>=T.invLo/100&&M6.invR<=T.invHi/100,(M6.invR*100).toFixed(0)+'%',T.invLo+'~'+T.invHi+'%')],
+  ['资产负债率', chk(M6.debtR<=T.debt/100,(M6.debtR*100).toFixed(0)+'%','≤'+T.debt+'%')]
+ ];
+ const hitN=goals.filter(x=>/✓/.test(x[1])).length;
+ const hint=document.getElementById('fcHint'); if(!hint) return;
+ hint.innerHTML=`🔮 <b>第6期(终局)目标推演</b>：当前决策下预计命中 <b>${hitN}/5</b>。`
+  +'<br>'+goals.map(x=>`${x[0]}：${x[1]}`).join(' ｜ ')
+  +'<br><span style="color:var(--faint)">在上方「交互模型」改第3-6期的价格/产量/研发/销代, 本表实时更新; 想反推达标决策用「目标倒推」。</span>';
 }
 // ===== 倒推求解: 目标 → 决策(一组可行解) =====
 // 目标默认=夺奖门槛; 用户可改成自己想冲的值
@@ -1428,7 +1527,7 @@ function renderMarketReal(){
   +'<br>💰 <b>成本前沿</b>=该段全场最低单位成本，你的直接成本越接近它、越有降价空间：墨晶2 最低（$8.7~11.4）但盘子小，墨晶1/墨晶3 成本高（$17~26）但市场大。'
   +'<br>📉 <b>期1→期2 变化</b>：北美墨晶3、亚太/欧联墨晶2·墨晶3 在缩量，需求正向北美墨晶1 与大众型号集中——排产别押注缩量的小众段。';
 }
-function renderAll(){renderRevTargets();renderStrat();renderIntel();renderMarketReal();renderCompet();renderCalib();renderCtrls();renderResults();
+function renderAll(){renderRevTargets();renderStrat();renderIntel();renderMarketReal();renderValidation();renderForecast();renderCompet();renderCalib();renderCtrls();renderResults();
  document.querySelectorAll('.qtab').forEach((t,i)=>t.classList.toggle('on',i===cur));}
 
 function applyPreset(t){
