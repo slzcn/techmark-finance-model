@@ -531,8 +531,10 @@ let STOCK_GROWTHPREM=80; // 增长溢价系数($/每100%销售增长),体现成�
 let STRATEGY='neutral'; // 'diff'差异化 | 'cost'成本领先 | 'neutral'中性
 function priceSlope(){ return STRATEGY==='diff'?0.55 : STRATEGY==='cost'?1.05 : 0.8; }
 // ===== 竞争对手(可选): 关闭=沿用固定30%上限(默认,数字不变); 打开=相对份额=你的吸引力/(你的+对手吸引力) =====
-// rival[pk]=场上对手的等效吸引力总和(你满吸引力=1); 2.3≈还原当前默认竞争强度(满吸引力时份额~30%)
-let COMPET={on:false, rival:{m1:2.3,m2:2.3,m3:2.3}, rivalStock:0};
+// 每期独立记录一个"综合对手"(把场上所有对手合并成一个等效竞争者): 参数+各市场定价/广告/销代
+// 你每期把对手决策照片给我, 我按期填入 COMPET.byQ[q]; 目标随双方当期决策变化, 全部持久化
+// 结构体在 PARAM_INIT 定义之后初始化(见下), 避免 TDZ
+let COMPET={on:false, byQ:[]};
 
 // ===== 决策状态: 每季独立 =====
 function blankQ(){
@@ -547,11 +549,16 @@ function blankQ(){
 }
 function nd(price,qty){return {price:price,qty:qty===undefined?0:qty,reps:0,ad:0,site:0};} // site:产地 0尤1纳2尼
 let Q=[blankQ(),blankQ(),blankQ(),blankQ(),blankQ(),blankQ()];
-let cur=5, curP=1;
+let cur=0, curP=1; // 默认第1期(六期制,逐期推进)
 let stockPrice=null; // 夺奖目标: 游戏内实际股价, 用户手填(游戏另有定价公式, 本模型不推算)
 // 研发参数是"累积生效"的: 记录每产品当前实际参数(初始=首季理想附近的历史值)
 // 简化: 每季可设目标参数, 研发预算够则本季生效, 否则维持上季
 const PARAM_INIT={m1:[4.2,3.9],m2:[2.5,2.4],m3:[1.9,3.5]}; // 首季起始(尤菲亚Q1理想)
+// ===== 竞争对手·每期决策结构(在 PARAM_INIT 之后初始化) =====
+function rNat(){ return {price:0, ad:0, reps:0}; } // 对手某市场投放: 定价/广告$K/销代; 全为0=该市场无对手
+function blankRival(pk){ return {tq:PARAM_INIT[pk][0], rs:PARAM_INIT[pk][1], nat:[rNat(),rNat(),rNat()]}; }
+function blankRivalQ(){ return {rivalStock:0, prod:{m1:blankRival('m1'),m2:blankRival('m2'),m3:blankRival('m3')}}; }
+for(let _q=0;_q<6;_q++) COMPET.byQ.push(blankRivalQ());
 
 // ===== 研发成功判定 (P9/P10) =====
 // 成本≈ 改变距离 × 型号系数; 满量程(4.0)双参数约$6M; 变1.0约$1.1M
@@ -620,6 +627,21 @@ function matchScore(pk,ni,q){
  }
  return Math.max(0,1-dist/2.8);
 }
+// 对手匹配度: 用对手本期该产品参数 vs 同一理想值(同一市场标尺)
+function matchScoreRival(pk,ni,q){
+ const id=IDEAL[pk][q][ni], r=COMPET.byQ[q].prod[pk];
+ const dt=(r.tq!=null?r.tq:PARAM_INIT[pk][0])-id[0];
+ const dr=(r.rs!=null?r.rs:PARAM_INIT[pk][1])-id[1];
+ let dist=Math.sqrt(dt*dt+dr*dr);
+ if(pk!=='m3'){ const ad=(r.nat[ni]&&r.nat[ni].ad)||0; dist=dist*(1-0.20*Math.min(1,ad/450)); }
+ return Math.max(0,1-dist/2.8);
+}
+// 对手在某市场的吸引力(同己方口径): 未投放(定价/广告/销代全空)=该市场无对手→返回0(你独占需求上限)
+function rivalAttract(pk,ni,q){
+ const r=COMPET.byQ[q].prod[pk], x=r.nat[ni];
+ if(!x || ((x.reps||0)<=0 && (x.price||0)<=0 && (x.ad||0)<=0)) return 0;
+ return matchScoreRival(pk,ni,q)*adFactor(x.ad,pk)*repFactor(x.reps,pk)*priceFactor(x.price,pk);
+}
 
 // ===== 销代限额(P15 审计师上限, 不可突破) =====
 const REP_CAP=[[13,8,11],[13,8,11],[14,9,12],[14,9,12],[15,10,13],[15,10,13]]; // 6期 各期尤/纳/尼销代上限(每两期+1递增, Q5-Q6为外推)
@@ -642,9 +664,10 @@ function calcQ(q, carryFixed, carryEquity, prevReps, carryCash, extraMove, prevR
    const ms=matchScore(pk,ni,q),af=adFactor(x.ad,pk),rf=repFactor(x.reps,pk),pf=priceFactor(x.price,pk);
    const cap=DEMAND[pk][q][ni];
    const attract=ms*af*rf*pf;
-   // 竞争对手开启→相对份额(你的吸引力 vs 对手); 关闭→固定30%上限(原口径,数字不变)
-   const share=COMPET.on ? attract/(attract+Math.max(0.0001,COMPET.rival[pk]||0))
-                         : Math.min(0.30, attract*0.30);
+   // 竞争对手开启→相对份额(你的吸引力 vs 本期对手吸引力); 关闭→固定30%上限(原口径,数字不变)
+   let share;
+   if(COMPET.on){ const ra=rivalAttract(pk,ni,q); share=(attract+ra)>0?attract/(attract+ra):0; } // 该市场无对手ra=0→独占
+   else share=Math.min(0.30, attract*0.30);
    const potential=Math.floor(cap*share);
    const sold=Math.min(x.qty,potential);
    // 丢单检测(P14): 潜在销量>产量 且 产量已抵单市场配额999K → 超出订单落到竞争对手
@@ -780,7 +803,7 @@ function renderQtabs(){
 }
 function selQ(q){cur=q;renderAll();}
 function selProd(i){curP=i;document.querySelectorAll('.mtab').forEach(t=>t.classList.toggle('on',+t.dataset.p===i));
- document.getElementById('curProd').textContent=PNAME[i];renderCtrls();renderResults();}
+ document.getElementById('curProd').textContent=PNAME[i];renderCtrls();renderCompet();renderResults();}
 
 function renderCtrls(){
  const pk=PKEY[curP],p=Q[cur].prod[pk];
@@ -853,8 +876,9 @@ function dset(key,v){
  else if(a[0]==='N') Q[cur].prod[PKEY[curP]].nat[+a[1]][a[2]]=v;
  else if(a[0]==='members') Q[cur].members=v;
  else if(a[0]==='debtCap') Q[cur].debtCap=v;
- else if(a[0]==='C') COMPET.rival[a[1]]=v;
- else if(a[0]==='CS') COMPET.rivalStock=v;
+ else if(a[0]==='RC') COMPET.byQ[cur].prod[PKEY[curP]][a[1]]=v;            // 对手参数: RC:tq / RC:rs
+ else if(a[0]==='RN') COMPET.byQ[cur].prod[PKEY[curP]].nat[+a[1]][a[2]]=v; // 对手市场投放: RN:ni:price/ad/reps
+ else if(a[0]==='CS') COMPET.byQ[cur].rivalStock=v;                        // 对手本期预计最高股价
  renderAll();
 }
 function toggleCompet(){ COMPET.on=!COMPET.on; renderAll(); }
@@ -956,7 +980,7 @@ function restore(){
   const o=JSON.parse(s);
   if(Array.isArray(o.Q)&&o.Q.length===6) Q=o.Q;
   if(o.STRATEGY) STRATEGY=o.STRATEGY;
-  if(o.COMPET&&typeof o.COMPET==='object'&&o.COMPET.rival) COMPET=o.COMPET;
+  if(o.COMPET&&typeof o.COMPET==='object'&&Array.isArray(o.COMPET.byQ)&&o.COMPET.byQ.length===6) COMPET=o.COMPET;
   if(typeof o.cur==='number') cur=o.cur;
   if(typeof o.curP==='number') curP=o.curP;
   stockPrice=(o.stockPrice===null||typeof o.stockPrice==='number')?o.stockPrice:stockPrice;
@@ -1017,7 +1041,8 @@ function stockHint(est){
  const d=use-168;
  const cmp = d>=0 ? `已超 $${Math.round(d).toLocaleString()}` : `差 $${Math.round(-d).toLocaleString()}`;
  let s=`目标 ≥ $168 · 用${src}值 $${Math.round(use).toLocaleString()} · ${cmp}`;
- if(COMPET.rivalStock>0){ s+= use>=COMPET.rivalStock ? ` · 高于对手$${COMPET.rivalStock}→可夺魁` : ` · 低于对手$${COMPET.rivalStock}→难夺魁`; }
+ const rs=(COMPET.byQ[cur]&&COMPET.byQ[cur].rivalStock)||0;
+ if(rs>0){ s+= use>=rs ? ` · 高于对手$${rs}→可夺魁` : ` · 低于对手$${rs}→难夺魁`; }
  return s;
 }
 function setStock(v){
@@ -1185,25 +1210,40 @@ function renderCompet(){
  if(badge) badge.textContent = COMPET.on?'已开启·相对份额':'可选·默认关闭';
  const toggle=`<button class="compbtn ${COMPET.on?'on':''}" onclick="toggleCompet()">${COMPET.on?'● 竞争模式已开启':'○ 点击开启竞争模式'}</button>`;
  if(!COMPET.on){
-  el.innerHTML=toggle+`<div class="hint" style="margin-top:10px">当前为<b>关闭</b>状态: 沿用固定 30% 市场上限(原口径, 你已有的推演数字不变)。开启后改用<b>相对份额</b> = 你的吸引力 /(你的吸引力 + 对手吸引力), 涨价/减广告会把份额让给对手, 对手弱时你也能吃超过 30%。`;
+  el.innerHTML=toggle+`<div class="hint" style="margin-top:10px">当前为<b>关闭</b>状态: 沿用固定 30% 市场上限(原口径, 你已有的推演数字不变)。开启后改用<b>相对份额</b> = 你的吸引力 /(你的吸引力 + 对手吸引力), 逐期独立记录对手决策(参数/定价/广告/销代), 涨价/减广告会把份额让给对手, 对手弱时你也能吃超过 30%。`;
   return;
  }
- // 展示各产品在"当前决策下"的对手强度滑块 + 由此得到的份额示意
- let rows='';
- for(const pk of PKEY){
-  rows+=`<div class="ctrl"><label>${{m1:'磁1',m2:'磁2',m3:'磁3'}[pk]} 对手综合强度 <span>${(COMPET.rival[pk]||0).toFixed(1)}</span></label>
-    ${slRow('C:'+pk,(COMPET.rival[pk]||0),0,6,0.1)}</div>`;
+ // 逐期·逐产品录入对手决策(与己方对称), 显示的是"当前查看期(第cur+1季)+当前产品(curP)"的对手
+ const pk=PKEY[curP], rq=COMPET.byQ[cur], r=rq.prod[pk];
+ const rtq=(r.tq!=null?r.tq:PARAM_INIT[pk][0]), rrs=(r.rs!=null?r.rs:PARAM_INIT[pk][1]);
+ let hn='';
+ for(let ni=0;ni<3;ni++){ const x=r.nat[ni];
+  const active=(x.reps>0||x.price>0||x.ad>0);
+  hn+=`<div class="natbox"><h3>${NATNAME[ni]} ${active?'':'<span style="color:var(--dim);font-weight:600;font-size:11px">·此市场无对手</span>'}</h3>
+   <div class="ctrl"><label>对手定价($EU) <span>$${x.price}</span></label>
+    ${slRow('RN:'+ni+':price',x.price,0,90,1)}</div>
+   <div class="ctrl"><label>对手销售代表 <span>${x.reps}</span></label>
+    ${slRow('RN:'+ni+':reps',x.reps,0,20,1)}</div>
+   ${pk!=='m3'?`<div class="ctrl"><label>对手广告($K) <span>$${x.ad}K</span></label>
+    ${slRow('RN:'+ni+':ad',x.ad,0,999,5)}</div>`:'<div class="hint">磁3不打广告</div>'}
+  </div>`;
  }
- el.innerHTML=toggle+`<div class="grid2" style="margin-top:12px">${rows}</div>
-  <div class="ctrl" style="margin-top:8px"><label>对手预计最高股价(夺魁对比·可留空) <span>${COMPET.rivalStock>0?('$'+COMPET.rivalStock):'—'}</span></label>
-    ${slRow('CS',(COMPET.rivalStock||0),0,600,1)}</div>
-  <div class="hint" style="margin-top:8px">对手强度=场上竞品的等效吸引力总和(你满吸引力记为1)。<b>2.3≈还原默认竞争强度</b>(你满吸引力时约拿 30%);调高=对手更强、你份额被压;调低=对手弱、你能吃更多。夺奖看"五项达标且股价最高", 填对手最高股价即可在上方夺奖卡看你能否夺魁。`;
+ el.innerHTML=toggle+`
+  <div class="hint" style="margin-top:10px">正在录入 <b>第 ${cur+1} 季 · ${PNAME[curP]}</b> 的对手决策(切换上方季度/产品页签即切换录入期)。三个市场留空=该市场无对手, 你独占需求上限。</div>
+  <div class="grid2" style="margin-top:10px">
+   <div class="ctrl"><label>对手 研发-扭矩 <span>${rtq.toFixed(1)}</span></label>${slRow('RC:tq',rtq,1,5,0.1)}</div>
+   <div class="ctrl"><label>对手 研发-电阻 <span>${rrs.toFixed(1)}</span></label>${slRow('RC:rs',rrs,1,5,0.1)}</div>
+  </div>
+  <div class="natgrid" style="margin-top:10px">${hn}</div>
+  <div class="ctrl" style="margin-top:10px"><label>对手本期预计最高股价(夺魁对比·可留空) <span>${rq.rivalStock>0?('$'+rq.rivalStock):'—'}</span></label>
+    ${slRow('CS',(rq.rivalStock||0),0,600,1)}</div>
+  <div class="hint" style="margin-top:8px">对手数据你拍照给我、我按期填这里。相对份额 = 你的吸引力 /(你的吸引力 + 对手吸引力), 用同一套匹配/广告/销代/价格弹性公式。夺奖看"五项达标且股价最高", 填对手股价即可在上方夺奖卡看能否夺魁。</div>`;
 }
 function renderAll(){renderRevTargets();renderStrat();renderCompet();renderCalib();renderCtrls();renderResults();
  document.querySelectorAll('.qtab').forEach((t,i)=>t.classList.toggle('on',i===cur));}
 
 function applyPreset(t){
- if(t==='reset'){ Q=[blankQ(),blankQ(),blankQ(),blankQ(),blankQ(),blankQ()]; cur=5;curP=1; selProd(1); renderAll(); return; }
+ if(t==='reset'){ Q=[blankQ(),blankQ(),blankQ(),blankQ(),blankQ(),blankQ()]; cur=0;curP=1; selProd(1); renderAll(); return; }
  if(t==='hist'){ // 历史基准:全在尤菲亚产,历史价,初始销代
   Q=[blankQ(),blankQ(),blankQ(),blankQ(),blankQ(),blankQ()];
   for(let q=0;q<6;q++){
@@ -1211,7 +1251,7 @@ function applyPreset(t){
    Q[q].prod.m2.nat=[nd(26,300000),nd(26,0),nd(26,0)];Q[q].prod.m2.nat[0].reps=3;Q[q].prod.m2.nat[0].ad=50;
    Q[q].prod.m3.nat=[nd(32,500000),nd(32,0),nd(32,0)];Q[q].prod.m3.nat[0].reps=1;
   }
-  cur=5;curP=1;selProd(1);renderAll();return;
+  cur=0;curP=1;selProd(1);renderAll();return;
  }
  if(t==='best'){
   Q=[blankQ(),blankQ(),blankQ(),blankQ(),blankQ(),blankQ()];
@@ -1231,7 +1271,7 @@ function applyPreset(t){
    Q[q].prod.m1.nat[2]=nd(42,300000);Q[q].prod.m1.nat[2].reps=4;Q[q].prod.m1.nat[2].ad=200;Q[q].prod.m1.nat[2].site=2;
    Q[q].members=3; Q[q].debtCap=10;
   }
-  cur=5;curP=1;selProd(1);renderAll();return;
+  cur=0;curP=1;selProd(1);renderAll();return;
  }
 }
 restore();selProd(curP);renderAll();
