@@ -388,6 +388,8 @@ function calcQ(q, carryFixed, carryEquity, prevReps, carryCash, extraMove, prevR
    const share=Math.min(0.30, ms*af*rf*pf*0.30);
    const potential=Math.floor(cap*share);
    const sold=Math.min(x.qty,potential);
+   // 丢单检测(P14): 潜在销量>产量 且 产量已抵单市场配额999K → 超出订单落到竞争对手
+   if(potential>x.qty && x.qty>=999000){ quotaWarn.push(PNAME[pi]+'·'+NATNAME[ni]+'产量触顶999K,丢'+((potential-x.qty)/1000).toFixed(0)+'K订单给对手'); }
    const uc=unitCostBase(pk,x.site,ni,x.qty)*(1+INFLAT[ni]*q);
    rev+=sold*x.price;
    cogsSold+=sold*uc;
@@ -544,7 +546,7 @@ function renderCtrls(){
   <div class="ctrl"><label>债务上限(信用额度) <span>$${Q[cur].debtCap}M</span></label>
    <input type="range" min="0" max="30" step="1" value="${Q[cur].debtCap}" oninput="Q[cur].debtCap=+this.value;renderResults()">
    <div class="hint">债务25%/年(6.25%/季)单利·极贵；现金<$5M自动借足、>$10M自动短投8%/年</div></div>
-  <div class="note">已内置：折旧2.5%/季(固定资产/40)｜库存费=期末存货10%｜所得税38%｜通胀 尤0/纳5%/尼1.25%每季累加｜产量单市场≤999K</div>`;
+  <div class="note">已内置：折旧2.5%/季(固定资产/40)｜库存费=期末存货10%｜所得税38%｜通胀 尤0/纳5%/尼1.25%每季累加｜产量单市场≤999K｜汇率 纳4:1/尼2:1(定价与成本均已统一为$EU口径,尼元五年从8:1升至2:1持续升值→尼市场实得改善)</div>`;
 }
 function setP(k,v){Q[cur].prod[PKEY[curP]][k]=+v;renderAll();}
 function setRD(v){Q[cur].prod[PKEY[curP]].rd=+v;renderAll();}
