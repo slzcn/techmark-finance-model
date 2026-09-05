@@ -212,6 +212,20 @@ tr.sub td:first-child{padding-left:16px}
 .calibitem input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,209,197,.22)}
 .calibitem .cu{font-size:12px;color:var(--faint);font-weight:700}
 .calibitem .ch{font-size:10px;color:var(--faint);margin-top:6px;line-height:1.4}
+.stratseg{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}
+@media(max-width:800px){.stratseg{grid-template-columns:1fr}}
+.stratbtn{text-align:left;background:var(--panel2);border:1.5px solid var(--line);border-radius:12px;
+  padding:12px 14px;cursor:pointer;color:var(--txt);font-family:inherit;transition:.15s}
+.stratbtn:hover{border-color:var(--line2);transform:translateY(-1px)}
+.stratbtn.on{border-color:var(--accent);background:linear-gradient(165deg,rgba(79,209,197,.14),var(--panel2));
+  box-shadow:0 0 0 3px rgba(79,209,197,.15)}
+.stratbtn .sn{font-size:14px;font-weight:800;margin-bottom:6px}
+.stratbtn.on .sn{color:var(--accent)}
+.stratbtn .sd{font-size:11px;color:var(--dim);line-height:1.5}
+.dimtag{font-size:10.5px;font-weight:800;letter-spacing:.03em;margin:10px 0 6px;padding:3px 9px;
+  border-radius:7px;display:inline-block}
+.dimtag.prod{background:rgba(246,173,85,.14);color:var(--accent2)}
+.dimtag.sales{background:rgba(129,178,252,.14);color:#81b2fc}
 
 /* ===== 图片卡(漂移图/速查表) ===== */
 .imgcard{background:linear-gradient(168deg,rgba(36,49,80,.5),rgba(22,30,48,.86));
@@ -337,9 +351,15 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
   <div class="hint" style="margin-top:10px">这些是模型里原本写死的假设，现在全部摊开可改：<b>成本缩放</b>=你的真实单位成本 ÷ 教材P26成本(若拿到成本表就调到吻合)；<b>价格锚</b>=各产品需求价格弹性的基准价(本局真实基准价，售价高于它→销量降)；<b>流通股/市盈率/净资产权重/增长溢价</b>=股价估算公式的系数。改任一项即时重算五目标。</div>
 </div>
 
+<div class="card full" id="stratCard">
+  <h2>♟️ 一·战略决策 <span class="badge">定基调·影响价格弹性</span></h2>
+  <div class="stratseg" id="stratCtrls"></div>
+  <div class="hint" id="stratHint" style="margin-top:10px"></div>
+</div>
+
 <div class="grid">
   <div class="card">
-    <h2>🎛️ 产品决策 <span class="badge" id="curProd">磁2</span></h2>
+    <h2>🔬 二·研发决策 <span class="badge" id="curProd">磁2</span></h2>
     <div class="mtabs">
       <div class="mtab m1" data-p="0" onclick="selProd(0)">磁1</div>
       <div class="mtab m2 on" data-p="1" onclick="selProd(1)">磁2</div>
@@ -349,13 +369,13 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
   </div>
 
   <div class="card">
-    <h2>🌏 三国投放（当前产品·当前季）</h2>
+    <h2>🏭 三·生产 & 📣 四·销售决策<span class="badge">当前产品·当前季</span></h2>
     <div class="natgrid" id="natCtrls"></div>
     <div class="note" id="prodNote"></div>
   </div>
 
   <div class="card">
-    <h2>💰 全局财务决策</h2>
+    <h2>💰 五·财务决策</h2>
     <div id="finCtrls"></div>
   </div>
 
@@ -450,6 +470,10 @@ let SHARES=1000000;      // 流通股数(算每股指标/股价用),游戏若给
 let STOCK_PE=12;         // 市盈率倍数(股价估算=PE×年化每股净利 的权重)
 let STOCK_BOOKMULT=1;    // 每股净资产权重(股价估算的账面价值支撑)
 let STOCK_GROWTHPREM=80; // 增长溢价系数($/每100%销售增长),体现成长预期对股价的拉动
+// ===== 战略维度: 差异化 vs 成本领先 vs 中性 =====
+// 只调价格弹性斜率(顾客对高价的容忍度), 不凭空造利润; 中性=原始教材口径
+let STRATEGY='neutral'; // 'diff'差异化 | 'cost'成本领先 | 'neutral'中性
+function priceSlope(){ return STRATEGY==='diff'?0.55 : STRATEGY==='cost'?1.05 : 0.8; }
 
 // ===== 决策状态: 每季独立 =====
 function blankQ(){
@@ -519,8 +543,9 @@ function repFactor(reps,pk){ // 销代×销售时间: 该产品可用销售力
 function priceFactor(price,pk){
  const base=HISTPRICE[pk];
  const ratio=price/base;
- // 价格每高于基准价10%, 需求降~8%; 低10%升~8%(封顶[0.35,1.35])
- return Math.max(0.35, Math.min(1.35, 1-0.8*(ratio-1)));
+ // 价格每高于基准价10%, 需求降~斜率%; 低则升(封顶[0.35,1.35])
+ // 斜率由战略决定: 差异化0.55(顾客更能接受高价) / 中性0.8 / 成本领先1.05(更价格敏感)
+ return Math.max(0.35, Math.min(1.35, 1-priceSlope()*(ratio-1)));
 }
 function matchScore(pk,ni,q){
  const id=IDEAL[pk][q][ni], p=Q[q].prod[pk];
@@ -718,17 +743,19 @@ function renderCtrls(){
  let h='';
  for(let ni=0;ni<3;ni++){const x=p.nat[ni];
   h+=`<div class="natbox"><h3>${NATNAME[ni]}</h3>
-   <div class="ctrl"><label>定价 <span>$${x.price}</span></label>
-    <input type="range" min="10" max="90" step="1" value="${x.price}" oninput="setN(${ni},'price',this.value)"></div>
+   <div class="dimtag prod">🏭 生产</div>
    <div class="ctrl"><label>产量 <span>${(x.qty/1000).toFixed(0)}K</span></label>
     <input type="range" min="0" max="999000" step="1000" value="${x.qty}" oninput="setN(${ni},'qty',this.value)"></div>
+   <div class="ctrl"><label style="font-size:11px">产地(省关税)</label>
+    <div class="seg">${[0,1,2].map(s=>`<button class="${x.site===s?'on':''}" onclick="setN(${ni},'site',${s})">${NATNAME[s]}</button>`).join('')}</div>
+    <div class="hint">非尤菲亚首次:+$1M安装+$100K开办</div></div>
+   <div class="dimtag sales">📣 销售</div>
+   <div class="ctrl"><label>定价 <span>$${x.price}</span></label>
+    <input type="range" min="10" max="90" step="1" value="${x.price}" oninput="setN(${ni},'price',this.value)"></div>
    <div class="ctrl"><label>销售代表 <span>${x.reps}</span></label>
     <input type="range" min="0" max="20" step="1" value="${x.reps}" oninput="setN(${ni},'reps',this.value)"></div>
    ${pk!=='m3'?`<div class="ctrl"><label>广告 <span>$${x.ad}K</span></label>
     <input type="range" min="0" max="999" step="5" value="${x.ad}" oninput="setN(${ni},'ad',this.value)"></div>`:'<div class="hint">磁3不打广告</div>'}
-   <div class="ctrl"><label style="font-size:11px">产地(省关税)</label>
-    <div class="seg">${[0,1,2].map(s=>`<button class="${x.site===s?'on':''}" onclick="setN(${ni},'site',${s})">${NATNAME[s]}</button>`).join('')}</div>
-    <div class="hint">非尤菲亚首次:+$1M安装+$100K开办</div></div>
   </div>`;
  }
  document.getElementById('natCtrls').innerHTML=h;
@@ -926,7 +953,23 @@ function setCalib(id,v){
  else if(id==='START_FIXED') START_FIXED=n;
  renderResults(); // 重算损益/资产/五目标(不重建标定输入框以免打断输入)
 }
-function renderAll(){renderCalib();renderCtrls();renderResults();
+// ===== 战略维度 UI =====
+const STRAT_DEF={
+ diff:{name:'差异化战略',desc:'走高端:高研发把参数做到理想、高定价、重广告塑品牌。顾客对高价容忍度更高(价格弹性斜率0.55),靠溢价而非走量。',play:'打法:研发预算拉满对齐理想参数、定价可高于锚价、广告投满450K、产量按精准需求不盲目铺量。'},
+ cost:{name:'成本领先战略',desc:'走规模:本地建厂+大产量压低单位成本、低定价抢量。顾客更价格敏感(斜率1.05),低价放量、薄利多销。',play:'打法:产地就近destNi省关税、产量上量踩成本阶梯下沿、定价压到锚价下方、研发够用即可不追极致。'},
+ neutral:{name:'中性(教材原始口径)',desc:'不施加战略偏置,价格弹性按教材原始斜率0.8。适合先看基准、再决定往哪偏。',play:'打法:作为基准对照,调完决策后再切到差异化/成本领先看两种打法下五目标怎么变。'}
+};
+function renderStrat(){
+ const el=document.getElementById('stratCtrls'); if(!el) return;
+ const keys=['diff','cost','neutral'];
+ el.innerHTML=keys.map(k=>`<button class="stratbtn ${STRATEGY===k?'on':''}" onclick="setStrat('${k}')">
+   <div class="sn">${STRAT_DEF[k].name}</div>
+   <div class="sd">${STRAT_DEF[k].desc}</div></button>`).join('');
+ const hint=document.getElementById('stratHint');
+ if(hint) hint.innerHTML='📌 '+STRAT_DEF[STRATEGY].play+' <span style="color:var(--faint)">当前价格弹性斜率='+priceSlope()+'(越小越能扛高价)</span>';
+}
+function setStrat(k){ STRATEGY=k; renderStrat(); renderResults(); }
+function renderAll(){renderStrat();renderCalib();renderCtrls();renderResults();
  document.querySelectorAll('.qtab').forEach((t,i)=>t.classList.toggle('on',i===cur));}
 
 function applyPreset(t){
