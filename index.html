@@ -198,6 +198,8 @@ tr.sub td:first-child{padding-left:16px}
   font-variant-numeric:tabular-nums;-moz-appearance:textfield}
 .goalitem input::-webkit-outer-spin-button,.goalitem input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .goalitem input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,209,197,.22)}
+@keyframes goalpulse{0%{box-shadow:0 0 0 0 rgba(79,209,197,.55)}100%{box-shadow:0 0 0 12px rgba(79,209,197,0)}}
+.goalitem.pulse{animation:goalpulse .5s ease-out}
 
 /* ===== 图片卡(漂移图/速查表) ===== */
 .imgcard{background:linear-gradient(168deg,rgba(36,49,80,.5),rgba(22,30,48,.86));
@@ -793,11 +795,17 @@ function renderGoals(C){
   const cv = it.cur==='input'
     ? `<input type="number" inputmode="decimal" min="0" step="1" placeholder="填入股价" value="${stockPrice==null?'':stockPrice}" oninput="setStock(this.value)">`
     : `<div class="gv">${it.cur}</div>`;
+  const gr = it.id==='goalStock' ? stockHint() : ('目标 '+it.req);
   h+=`<div class="goalitem ${cls}"${it.id?` id="${it.id}"`:''}><div class="gstat">${st}</div>
-    <div class="gl">${it.l}</div>${cv}<div class="gr">目标 ${it.req}</div></div>`;
+    <div class="gl">${it.l}</div>${cv}<div class="gr">${gr}</div></div>`;
  }
  document.getElementById('goals').innerHTML=h;
  updateGoalCount();
+}
+function stockHint(){
+ if(stockPrice==null) return '目标 ≥ $168';
+ const d=stockPrice-168;
+ return d>=0 ? `目标 ≥ $168 · 已超 $${d.toLocaleString()}` : `目标 ≥ $168 · 差 $${(-d).toLocaleString()}`;
 }
 function setStock(v){
  stockPrice = (v===''||v==null) ? null : +v;
@@ -805,6 +813,9 @@ function setStock(v){
  const ok = stockPrice!=null && stockPrice>=168;
  el.className='goalitem '+(stockPrice==null?'wait':(ok?'ok':'bad'));
  el.querySelector('.gstat').textContent = stockPrice==null?'待填':(ok?'达标':'未达标');
+ const gr=el.querySelector('.gr'); if(gr) gr.textContent=stockHint();
+ // 明确的即时反馈: 每次敲字都让这一格泛一圈涟漪, 不可能被当成"没反应"
+ el.classList.remove('pulse'); void el.offsetWidth; el.classList.add('pulse');
  updateGoalCount();
 }
 function updateGoalCount(){
