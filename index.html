@@ -173,6 +173,31 @@ tr.sub td:first-child{padding-left:16px}
 .flag{display:inline-block;font-size:11px;padding:2px 9px;border-radius:7px;margin-left:8px;font-weight:700}
 .flag.ok{background:rgba(104,211,145,.16);color:var(--green)}
 .flag.bad{background:rgba(252,129,129,.16);color:var(--red)}
+.hint b{color:var(--txt)}
+
+/* ===== 夺奖目标看板 ===== */
+.goalcard{margin-bottom:18px}
+.goalgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:11px}
+.goalitem{background:linear-gradient(165deg,rgba(30,41,63,.9),rgba(22,30,48,.8));
+  border:1px solid var(--line);border-left:3px solid var(--faint);border-radius:12px;
+  padding:13px 14px;position:relative;transition:border-color .2s,transform .2s}
+.goalitem:hover{transform:translateY(-2px)}
+.goalitem.ok{border-left-color:var(--green)}
+.goalitem.bad{border-left-color:var(--red)}
+.goalitem.wait{border-left-color:var(--accent2)}
+.goalitem .gl{font-size:12px;color:var(--dim);margin-bottom:8px;font-weight:600}
+.goalitem .gv{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:.3px}
+.goalitem .gr{font-size:10.5px;color:var(--faint);margin-top:7px}
+.goalitem .gstat{position:absolute;top:12px;right:12px;font-size:10px;font-weight:800;
+  padding:2px 8px;border-radius:7px;letter-spacing:.02em}
+.goalitem.ok .gstat{background:rgba(104,211,145,.16);color:var(--green)}
+.goalitem.bad .gstat{background:rgba(252,129,129,.16);color:var(--red)}
+.goalitem.wait .gstat{background:rgba(246,173,85,.16);color:var(--accent2)}
+.goalitem input{width:100%;background:var(--bg);border:1px solid var(--line2);border-radius:9px;
+  color:var(--txt);font-size:17px;font-weight:800;padding:5px 10px;font-family:inherit;
+  font-variant-numeric:tabular-nums;-moz-appearance:textfield}
+.goalitem input::-webkit-outer-spin-button,.goalitem input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.goalitem input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,209,197,.22)}
 
 /* ===== 图片卡(漂移图/速查表) ===== */
 .imgcard{background:linear-gradient(168deg,rgba(36,49,80,.5),rgba(22,30,48,.86));
@@ -228,6 +253,7 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
   .natgrid{grid-template-columns:1fr}
   .card{padding:15px 15px}
   .card h2{font-size:14.5px;flex-wrap:wrap}
+  .goalgrid{grid-template-columns:repeat(2,1fr)}
   th,td{padding:8px 8px;font-size:12px}
   .ctrl input[type=range]{height:30px}
   .ctrl input[type=range]::-webkit-slider-runnable-track{height:8px}
@@ -243,6 +269,7 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
   .kpibox .lbl{font-size:10px}
   .kpibox .val{font-size:15px;overflow-wrap:anywhere}
   .kpibox .sub{font-size:9.5px}
+  .goalgrid{grid-template-columns:1fr}
   .qtabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;justify-content:flex-start;padding-bottom:6px}
   .qtab{padding:7px 13px;font-size:12px;flex:0 0 auto}
   .toolbar{gap:8px}
@@ -283,6 +310,12 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 
 <div class="kpi" id="kpi"></div>
 <div class="note" id="quotaWarn" style="border-left-color:var(--red)"></div>
+
+<div class="card full goalcard">
+  <h2>🏆 第6期夺奖目标 <span class="badge" id="goalCount">0/5 达标</span></h2>
+  <div id="goals" class="goalgrid"></div>
+  <div class="hint" style="margin-top:12px">五项全达标、且股价最高的组夺大奖。本模型为 4 季教学版，四项财务比率按<b>末季（期终）口径</b>实时核验；股票价格另有游戏公式，请从游戏中读出后填入核对 ≥$168。</div>
+</div>
 
 <div class="grid">
   <div class="card">
@@ -404,6 +437,7 @@ function blankQ(){
 function nd(price,qty){return {price:price,qty:qty===undefined?0:qty,reps:0,ad:0,site:0};} // site:产地 0尤1纳2尼
 let Q=[blankQ(),blankQ(),blankQ(),blankQ()];
 let cur=3, curP=1;
+let stockPrice=null; // 夺奖目标: 游戏内实际股价, 用户手填(游戏另有定价公式, 本模型不推算)
 // 研发参数是"累积生效"的: 记录每产品当前实际参数(初始=首季理想附近的历史值)
 // 简化: 每季可设目标参数, 研发预算够则本季生效, 否则维持上季
 const PARAM_INIT={m1:[4.2,3.9],m2:[2.5,2.4],m3:[1.9,3.5]}; // 首季起始(尤菲亚Q1理想)
@@ -727,7 +761,54 @@ function renderResults(){
  }
  dh+='</tbody>';
  document.getElementById('detail').innerHTML=dh;
+ renderGoals(C);
  renderQtabs();
+}
+
+// ===== 第6期夺奖目标达成度(末季期终口径) =====
+function renderGoals(C){
+ const r=C.r;
+ const gm = r.rev>0 ? (r.rev-r.cogsSold)/r.rev : 0;          // 毛利率
+ const prevRev = (cur>0 && C.perQ[cur-1]) ? C.perQ[cur-1].rev : null;
+ const growth = (prevRev && prevRev>0) ? (r.rev-prevRev)/prevRev : null; // 销售额增长率
+ const invR = C.totalAsset>0 ? r.invVal/C.totalAsset : 0;    // 存货资产比
+ const debtR = C.totalAsset>0 ? r.debt/C.totalAsset : 0;     // 资产负债率
+ const items=[
+  {id:'goalStock', l:'期终股票价格', req:'≥ $168', cur:'input',
+    stat: stockPrice==null?null:stockPrice>=168},
+  {l:'销售额增长率', req:'≥ 5%',
+    cur: growth==null?'首季无对比':pct(growth), stat: growth==null?null:growth>=0.05},
+  {l:'毛利率', req:'≥ 35%', cur: pct(gm), stat: gm>=0.35},
+  {l:'存货资产比', req:'4% ~ 9%', cur: pct(invR), stat: invR>0.04 && invR<0.09},
+  {l:'资产负债率', req:'≤ 25%', cur: pct(debtR), stat: debtR<=0.25}
+ ];
+ let h='';
+ for(const it of items){
+  let cls,st;
+  if(it.stat==null){cls='wait';st=it.cur==='input'?'待填':'—';}
+  else if(it.stat){cls='ok';st='达标';}
+  else {cls='bad';st='未达标';}
+  const cv = it.cur==='input'
+    ? `<input type="number" inputmode="decimal" min="0" step="1" placeholder="填入股价" value="${stockPrice==null?'':stockPrice}" oninput="setStock(this.value)">`
+    : `<div class="gv">${it.cur}</div>`;
+  h+=`<div class="goalitem ${cls}"${it.id?` id="${it.id}"`:''}><div class="gstat">${st}</div>
+    <div class="gl">${it.l}</div>${cv}<div class="gr">目标 ${it.req}</div></div>`;
+ }
+ document.getElementById('goals').innerHTML=h;
+ updateGoalCount();
+}
+function setStock(v){
+ stockPrice = (v===''||v==null) ? null : +v;
+ const el=document.getElementById('goalStock'); if(!el) return;
+ const ok = stockPrice!=null && stockPrice>=168;
+ el.className='goalitem '+(stockPrice==null?'wait':(ok?'ok':'bad'));
+ el.querySelector('.gstat').textContent = stockPrice==null?'待填':(ok?'达标':'未达标');
+ updateGoalCount();
+}
+function updateGoalCount(){
+ const pass=document.querySelectorAll('#goals .goalitem.ok').length;
+ const b=document.getElementById('goalCount');
+ if(b) b.textContent = pass+'/5 达标'+(pass>=5?' 🎉':'');
 }
 function renderAll(){renderCtrls();renderResults();
  document.querySelectorAll('.qtab').forEach((t,i)=>t.classList.toggle('on',i===cur));}
