@@ -418,6 +418,12 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
   <div class="hint" id="marketHint" style="margin-top:10px"></div>
 </div>
 
+<div class="card full" id="demandCard">
+  <h2>📈 全行业需求趋势与外推（期1-6） <span class="badge">期1/2真实·期3-6趋势外推</span></h2>
+  <div class="tablewrap"><table id="demandTab"></table></div>
+  <div class="hint" id="demandHint" style="margin-top:10px"></div>
+</div>
+
 <div class="card full" id="valCard">
   <h2>🎯 校准验证 · 模型 vs 官方真实（期1/期2）
     <button class="primary" style="float:right;font-size:13px;padding:4px 10px" onclick="autoCalib()">🎯 用真实结果自动校准</button></h2>
@@ -505,16 +511,24 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
   </div>
 </div>
 <script>
-// ===== 未经材料核实的推演假设值(占位) =====
-// ✅ 真实市场需求(全行业订单量, 件): 来源官方"整个行业订单/收入"逐段表。每产品 6 期 × 三地区[尤菲亚,纳达卡,尼赫鲁]。
-// 期1 = 期1收入 ÷ 期2观测均价(反推, 因期1只给了收入); 期2 = 官方订单原值; 期3-6 = 暂假设维持期2规模(真实到手后替换)。
-// 段映射: m1=[尤1,纳1,尼1] m2=[尤2,纳2,尼2] m3=[尤3,纳3,尼3]
-const _D2={m1:[1277462,1104233,1304660],m2:[1104691,123025,830661],m3:[1551272,99857,74779]}; // 期2真实订单
-const DEMAND={
- m1:[[1683900,1341300,851600], _D2.m1, _D2.m1, _D2.m1, _D2.m1, _D2.m1],
- m2:[[1104691,218300,397800],  _D2.m2, _D2.m2, _D2.m2, _D2.m2, _D2.m2],
- m3:[[1488100,81100,59200],    _D2.m3, _D2.m3, _D2.m3, _D2.m3, _D2.m3]
+// ===== 全行业需求(订单量, 件) =====
+// ✅ 期1/期2 = 官方"整个行业订单"逐段原值(真实); 期3-6 = 按 期1→期2 各段变化趋势阻尼外推(向1回归防复利失真)。
+// 段映射: m1=产品[雷1] 三地区[尤,纳,尼]; m2=[雷2]; m3=[雷3]。
+const DEMAND_REAL={ // 期1(idx0)/期2(idx1) 真实全行业订单, 单位件
+ m1:[[1764000,1154519,813780],[1277462,1104233,1304660]],
+ m2:[[1108013,228758,550194], [1104691,123025,830661]],
+ m3:[[2004240,118800,70754],  [1551272,99857,74779]]
 };
+const DEMAND_FC1={ m1:[1627500,1137600,810000], m2:[1102500,219600,668250], m3:[1860000,102900,88200] }; // 期1官方"整体市场预测"(对照用)
+const _DAMP=[0.60,0.42,0.30,0.22]; // 期3/4/5/6 趋势阻尼系数
+function _extrapDemand(p1,p2){
+ const out=[p1.slice(),p2.slice()]; let prev=p2.slice();
+ for(let k=0;k<4;k++){ const nx=prev.map((v,i)=>{ const g=p1[i]>0?p2[i]/p1[i]:1; return Math.round(v*(1+(g-1)*_DAMP[k])); }); out.push(nx); prev=nx; }
+ return out; // 6 期
+}
+const DEMAND={ m1:_extrapDemand(DEMAND_REAL.m1[0],DEMAND_REAL.m1[1]),
+               m2:_extrapDemand(DEMAND_REAL.m2[0],DEMAND_REAL.m2[1]),
+               m3:_extrapDemand(DEMAND_REAL.m3[0],DEMAND_REAL.m3[1]) };
 // ✅ 真实结果(火5=我们, 官方"经营结果"): 用于校准验证与达标对照。net/rev 单位=$百万
 const REAL_RESULTS={
  1:{rev:33, gm:0.37, net:0.0,  share:0.14, debt:0.38, inv:0.16, roe:0.0,   stock:100, growth:null},
@@ -1505,6 +1519,44 @@ function renderIntel(){
  }
  hint.innerHTML=s;
 }
+function renderDemandTrend(){
+ const el=document.getElementById('demandTab'); if(!el) return;
+ // 9 段: [区域i(0尤1纳2尼), 型号m(1/2/3)]。DEMAND[m][期][区域]
+ const REG=['尤','纳','尼'], MODK=['m1','m2','m3'];
+ const rows=[]; // {seg, series:[6期], g}
+ for(let m=0;m<3;m++) for(let r=0;r<3;r++){
+   const series=[0,1,2,3,4,5].map(q=>DEMAND[MODK[m]][q][r]);
+   const g=series[0]>0?series[1]/series[0]:1;
+   rows.push({seg:REG[r]+(m+1), series, g, m, r});
+ }
+ // 按期2需求降序
+ rows.sort((a,b)=>b.series[1]-a.series[1]);
+ const fmt=v=>(v/10000).toFixed(1);
+ let h='<thead><tr><th>细分段(万件)</th><th>期1<span style="color:var(--faint)">真</span></th><th>期2<span style="color:var(--faint)">真</span></th><th>期1→2</th><th>期3</th><th>期4</th><th>期5</th><th>期6</th></tr></thead><tbody>';
+ for(const x of rows){
+   const gp=(x.g-1)*100, gcol=Math.abs(gp)<3?'var(--faint)':(gp>0?'#68d391':'#fc8181');
+   const garr=Math.abs(gp)<3?'—':(gp>0?`▲${gp.toFixed(0)}%`:`▼${Math.abs(gp).toFixed(0)}%`);
+   h+=`<tr><td><b>${x.seg}</b></td><td>${fmt(x.series[0])}</td><td><b>${fmt(x.series[1])}</b></td>`
+     +`<td style="color:${gcol}">${garr}</td>`
+     +`<td style="color:var(--accent)">${fmt(x.series[2])}</td><td style="color:var(--accent)">${fmt(x.series[3])}</td>`
+     +`<td style="color:var(--accent)">${fmt(x.series[4])}</td><td style="color:var(--accent)">${fmt(x.series[5])}</td></tr>`;
+ }
+ // 合计行
+ const tot=q=>rows.reduce((a,x)=>a+x.series[q],0);
+ h+=`<tr style="border-top:2px solid var(--line)"><td><b>全行业合计</b></td><td>${fmt(tot(0))}</td><td><b>${fmt(tot(1))}</b></td>`
+   +`<td style="color:${tot(1)>=tot(0)?'#68d391':'#fc8181'}">${((tot(1)/tot(0)-1)*100).toFixed(0)}%</td>`
+   +`<td>${fmt(tot(2))}</td><td>${fmt(tot(3))}</td><td>${fmt(tot(4))}</td><td>${fmt(tot(5))}</td></tr>`;
+ h+='</tbody>';
+ el.innerHTML=h;
+ const hint=document.getElementById('demandHint'); if(!hint) return;
+ // 期1 预测 vs 实际 对照
+ const fcT=DEMAND_FC1.m1.reduce((a,b)=>a+b,0)+DEMAND_FC1.m2.reduce((a,b)=>a+b,0)+DEMAND_FC1.m3.reduce((a,b)=>a+b,0);
+ const acT=tot(0);
+ hint.innerHTML='🔎 <b>数据口径</b>：期1/期2 为官方「整个行业订单」<b>真实值</b>；期3-6 = 按各段 期1→期2 增速<b>阻尼外推</b>(系数 '+_DAMP.join('/')+'，逐期向零增长回归，防复利爆表)，属<b>趋势推测非官方</b>。'
+  +'<br>📊 <b>期1 官方「整体市场预测」对照</b>：预测全行业 '+fmt(fcT)+' 万件，实际 '+fmt(acT)+' 万件，误差 '+((acT/fcT-1)*100).toFixed(1)+'%——官方预测略偏保守，实际需求稍高。'
+  +'<br>📈 <b>看出的趋势</b>：需求正从 <b>尤菲亚/纳达卡向尼赫鲁转移</b>——尼1(+60%)、尼2(+51%) 两位数猛涨，而尤1(-28%)、尤3(-23%)、纳2(-46%) 明显缩量；全行业总盘 期1→2 微降 '+((tot(1)/tot(0)-1)*100).toFixed(0)+'%。'
+  +'<br>🎯 <b>对排产的含义</b>：期3-6 把产能往<b>尼赫鲁(尤其雷1/雷2)</b>倾斜、缩减尤菲亚雷3与纳达卡雷2的押注；外推是趋势参考，官方给出期2以后的「整体市场预测」后即可替换为真值。';
+}
 function renderMarketReal(){
  const el=document.getElementById('marketTab'); if(!el) return;
  const M=MARKET_REAL, n=M.seg.length;
@@ -1523,11 +1575,11 @@ function renderMarketReal(){
  h+='</tbody>';
  el.innerHTML=h;
  const hint=document.getElementById('marketHint'); if(!hint) return;
- hint.innerHTML='📦 <b>需求盘子</b>：<b>尤菲亚(尤菲亚)</b>是绝对主战场，雷墨磁1/雷墨磁3 两段合计占全行业过半；纳达卡(纳达卡)靠雷墨磁1 撑量，尼赫鲁(尼赫鲁)以雷墨磁1 为主。'
+ hint.innerHTML='📦 <b>需求盘子</b>：<b>尤菲亚</b>是绝对主战场，雷墨磁1/雷墨磁3 两段合计占全行业过半；纳达卡靠雷墨磁1 撑量，尼赫鲁以雷墨磁1 为主。'
   +'<br>💰 <b>成本前沿</b>=该段全场最低单位成本，你的直接成本越接近它、越有降价空间：雷墨磁2 最低（$8.7~11.4）但盘子小，雷墨磁1/雷墨磁3 成本高（$17~26）但市场大。'
   +'<br>📉 <b>期1→期2 变化</b>：尤菲亚雷墨磁3、纳达卡/尼赫鲁雷墨磁2·雷墨磁3 在缩量，需求正向尤菲亚雷墨磁1 与大众型号集中——排产别押注缩量的小众段。';
 }
-function renderAll(){renderRevTargets();renderStrat();renderIntel();renderMarketReal();renderValidation();renderForecast();renderCompet();renderCalib();renderCtrls();renderResults();
+function renderAll(){renderRevTargets();renderStrat();renderIntel();renderMarketReal();renderDemandTrend();renderValidation();renderForecast();renderCompet();renderCalib();renderCtrls();renderResults();
  document.querySelectorAll('.qtab').forEach((t,i)=>t.classList.toggle('on',i===cur));}
 
 function applyPreset(t){
