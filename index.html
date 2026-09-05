@@ -226,6 +226,28 @@ tr.sub td:first-child{padding-left:16px}
   border-radius:7px;display:inline-block}
 .dimtag.prod{background:rgba(246,173,85,.14);color:var(--accent2)}
 .dimtag.sales{background:rgba(129,178,252,.14);color:#81b2fc}
+.revgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:11px}
+@media(max-width:900px){.revgrid{grid-template-columns:repeat(2,1fr)}}
+.revitem{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:10px 12px}
+.revitem label{display:block;font-size:11.5px;color:var(--dim);font-weight:700;margin-bottom:6px}
+.revitem input{flex:1;width:100%;min-width:0;background:var(--bg);border:1px solid var(--line2);border-radius:8px;
+  color:var(--txt);font-size:15px;font-weight:700;padding:5px 9px;font-family:inherit;
+  font-variant-numeric:tabular-nums;-moz-appearance:textfield}
+.revitem input::-webkit-outer-spin-button,.revitem input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.revitem input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,209,197,.22)}
+.revbtns{display:flex;gap:10px;margin-top:12px}
+.revbtns button{padding:9px 16px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);
+  color:var(--txt);font-weight:700;font-family:inherit;cursor:pointer;font-size:13px}
+.revbtns button.primary{background:linear-gradient(90deg,#4fd1c5,#38a89d);color:#06221f;border:none}
+.revbtns button:hover{transform:translateY(-1px)}
+.revresult{margin-top:12px}
+.revsum{font-size:13px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 13px;margin-bottom:10px}
+.revtab{width:100%;border-collapse:collapse;font-size:12.5px}
+.revtab th,.revtab td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left}
+.revtab th{color:var(--dim);font-weight:700;font-size:11px}
+.revtab td{font-variant-numeric:tabular-nums}
+.rok{color:var(--green);font-weight:800}
+.rbad{color:var(--red);font-weight:800}
 
 /* ===== 图片卡(漂移图/速查表) ===== */
 .imgcard{background:linear-gradient(168deg,rgba(36,49,80,.5),rgba(22,30,48,.86));
@@ -343,6 +365,17 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
   <h2>🏆 第6期夺奖目标 <span class="badge" id="goalCount">0/5 达标</span></h2>
   <div id="goals" class="goalgrid"></div>
   <div class="hint" style="margin-top:12px">五项全达标、且股价最高的组夺大奖。共 6 期模拟，四项财务比率按<b>第6期（期终）口径</b>实时核验。股票价格官方另有公式、且<b>不影响左侧损益/ROE</b>；本模型用透明公式<b>估算</b>一个参考值（每股净资产×权重 + 市盈率×年化EPS + 增长溢价×销售增长率，系数可在下方「标定参数」里调），若你已从游戏读到真实股价，填入下方小输入框即以真实值覆盖核对。<b>注</b>：第5-6期无官方数据，需求量由 Q1-Q4 对数线性回归、理想参数由线性回归预测得出，仅供推演参考。</div>
+</div>
+
+<div class="card full" id="reverseCard">
+  <h2>🔄 倒推求解 · 目标 → 决策 <span class="badge">填五目标·反推一组可行打法</span></h2>
+  <div class="revgrid" id="revTargets"></div>
+  <div class="revbtns">
+    <button class="primary" onclick="reverseSolve()">▶ 倒推一组可行解</button>
+    <button onclick="revRestore()">↩ 还原倒推前</button>
+  </div>
+  <div class="revresult" id="revResult"></div>
+  <div class="hint" style="margin-top:8px">目标→决策是<b>欠定问题</b>(多套决策都能达标),这里用真实前向模型对「战略×定价×产量×研发×债务」做网格搜索,回填一组能同时命中你所填目标的<b>可行打法</b>(非唯一解)。若当前没铺任何产量,会先套用「一键最优打法」的结构再调。结果直接写入下方各维度决策,可在正向视图继续微调。</div>
 </div>
 
 <div class="card full" id="calibCard">
@@ -953,6 +986,93 @@ function setCalib(id,v){
  else if(id==='START_FIXED') START_FIXED=n;
  renderResults(); // 重算损益/资产/五目标(不重建标定输入框以免打断输入)
 }
+// ===== 倒推求解: 目标 → 决策(一组可行解) =====
+// 目标默认=夺奖门槛; 用户可改成自己想冲的值
+let REV_T={stock:168, growth:5, gm:35, invLo:4, invHi:9, debt:25};
+let lastPreReverse=null; // 倒推前快照, 供还原
+function renderRevTargets(){
+ const el=document.getElementById('revTargets'); if(!el) return;
+ const f=(id,label,val,step,suf)=>`<div class="revitem"><label>${label}</label>
+   <div class="calibrow"><input type="number" step="${step}" value="${val}" oninput="REV_T.${id}=+this.value"><span class="cu">${suf}</span></div></div>`;
+ el.innerHTML =
+  f('stock','期终股票价格 ≥',REV_T.stock,1,'$')
+ +f('growth','销售额增长率 ≥',REV_T.growth,0.5,'%')
+ +f('gm','毛利率 ≥',REV_T.gm,1,'%')
+ +`<div class="revitem"><label>存货资产比 区间</label><div class="calibrow">
+    <input type="number" step="0.5" value="${REV_T.invLo}" oninput="REV_T.invLo=+this.value"><span class="cu">~</span>
+    <input type="number" step="0.5" value="${REV_T.invHi}" oninput="REV_T.invHi=+this.value"><span class="cu">%</span></div></div>`
+ +f('debt','资产负债率 ≤',REV_T.debt,1,'%');
+}
+function snapState(){ return JSON.stringify({Q:Q,STRATEGY:STRATEGY,cur:cur}); }
+function loadState(s){ const o=JSON.parse(s); Q=o.Q; STRATEGY=o.STRATEGY; cur=o.cur; }
+function scoreAgainst(M,T){
+ // 命中数(0~5)为主, 股价(夺奖看最高)其次, 毛利率再次
+ const g = M.growth==null?-1:M.growth;
+ const met = (M.estStock>=T.stock?1:0)+(g>=T.growth/100?1:0)+(M.gm>=T.gm/100?1:0)
+   +((M.invR>=T.invLo/100&&M.invR<=T.invHi/100)?1:0)+(M.debtR<=T.debt/100?1:0);
+ const s = (isFinite(M.estStock)?M.estStock:0);
+ return met*1e7 + s*100 + M.gm*1000;
+}
+function applyKnobs(base,strat,priceMul,qtyMul,rd,debtCap){
+ loadState(base); STRATEGY=strat;
+ for(let q=0;q<=cur;q++){
+  Q[q].debtCap=debtCap;
+  for(const pk of PKEY){ const p=Q[q].prod[pk]; p.rd=rd;
+   for(let ni=0;ni<3;ni++){ const x=p.nat[ni];
+    if(x.qty>0){ x.price=Math.round(x.price*priceMul); x.qty=Math.round(x.qty*qtyMul); }
+   }}
+ }
+}
+function reverseSolve(){
+ lastPreReverse=snapState();
+ // 若当前没铺任何产量, 先套用最优结构再搜
+ let totQty=0; for(let q=0;q<=5;q++)for(const pk of PKEY)for(let ni=0;ni<3;ni++)totQty+=Q[q].prod[pk].nat[ni].qty;
+ let base;
+ if(totQty<1000){ applyPreset('best'); base=snapState(); }
+ else base=snapState();
+ const T=REV_T;
+ const STRATS=['diff','neutral','cost'];
+ const PMUL=[0.8,0.9,1.0,1.1,1.2,1.3,1.45,1.6];
+ const QMUL=[0.15,0.25,0.35,0.5,0.7,0.85,1.0,1.2,1.4];
+ const RDS=[1,3,6];
+ const DEBT=[0];
+ let best=null;
+ for(const st of STRATS)for(const pm of PMUL)for(const qm of QMUL)for(const rd of RDS)for(const dc of DEBT){
+  applyKnobs(base,st,pm,qm,rd,dc);
+  const C=calcCumulative(); const M=goalMetrics(C);
+  const sc=scoreAgainst(M,T);
+  if(!best||sc>best.sc) best={sc,st,pm,qm,rd,dc,M};
+ }
+ // 应用最优
+ applyKnobs(base,best.st,best.pm,best.qm,best.rd,best.dc);
+ stockPrice=null; // 用估算股价核对
+ renderAll();
+ // 报告
+ const M=best.M;
+ const met=v=>v?'<span class="rok">达标</span>':'<span class="rbad">未达标</span>';
+ const g=M.growth==null?null:M.growth;
+ const rows=[
+  ['期终股票价格(估算)','$'+Math.round(M.estStock).toLocaleString(),'≥ $'+T.stock, M.estStock>=T.stock],
+  ['销售额增长率', g==null?'—':pct(g), '≥ '+T.growth+'%', g!=null&&g>=T.growth/100],
+  ['毛利率', pct(M.gm), '≥ '+T.gm+'%', M.gm>=T.gm/100],
+  ['存货资产比', pct(M.invR), T.invLo+'%~'+T.invHi+'%', M.invR>=T.invLo/100&&M.invR<=T.invHi/100],
+  ['资产负债率', pct(M.debtR), '≤ '+T.debt+'%', M.debtR<=T.debt/100]
+ ];
+ const hitN=rows.filter(r=>r[3]).length;
+ const stratName={diff:'差异化',neutral:'中性',cost:'成本领先'}[best.st];
+ let html=`<div class="revsum">命中 <b>${hitN}/5</b> 目标 ｜ 建议打法: 战略<b>${stratName}</b> · 定价×<b>${best.pm}</b> · 产量×<b>${best.qm}</b> · 研发<b>$${best.rd}M</b>/产品 · 债务上限<b>$${best.dc}M</b></div>`;
+ html+='<table class="revtab"><tr><th>目标</th><th>倒推达成</th><th>要求</th><th>判定</th></tr>';
+ for(const r of rows) html+=`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${met(r[3])}</td></tr>`;
+ html+='</table>';
+ if(hitN<5) html+='<div class="hint" style="margin-top:6px;color:var(--accent2)">⚠️ 未能五项全中: 在给定成本/价格锚下这组目标可能相互冲突(如高毛利要高价却压低增长)。可放宽某项目标, 或到「标定参数」调成本缩放/价格锚后重试。</div>';
+ document.getElementById('revResult').innerHTML=html;
+}
+function revRestore(){
+ if(!lastPreReverse){ document.getElementById('revResult').innerHTML='<div class="hint">还没有倒推记录可还原。</div>'; return; }
+ loadState(lastPreReverse); renderAll();
+ document.getElementById('revResult').innerHTML='<div class="hint">已还原到倒推前的决策。</div>';
+}
+
 // ===== 战略维度 UI =====
 const STRAT_DEF={
  diff:{name:'差异化战略',desc:'走高端:高研发把参数做到理想、高定价、重广告塑品牌。顾客对高价容忍度更高(价格弹性斜率0.55),靠溢价而非走量。',play:'打法:研发预算拉满对齐理想参数、定价可高于锚价、广告投满450K、产量按精准需求不盲目铺量。'},
@@ -969,7 +1089,7 @@ function renderStrat(){
  if(hint) hint.innerHTML='📌 '+STRAT_DEF[STRATEGY].play+' <span style="color:var(--faint)">当前价格弹性斜率='+priceSlope()+'(越小越能扛高价)</span>';
 }
 function setStrat(k){ STRATEGY=k; renderStrat(); renderResults(); }
-function renderAll(){renderStrat();renderCalib();renderCtrls();renderResults();
+function renderAll(){renderRevTargets();renderStrat();renderCalib();renderCtrls();renderResults();
  document.querySelectorAll('.qtab').forEach((t,i)=>t.classList.toggle('on',i===cur));}
 
 function applyPreset(t){
