@@ -114,7 +114,7 @@ header p{color:var(--dim);font-size:clamp(11px,2.6vw,13.5px);margin-top:9px;max-
 .seg button.on{background:linear-gradient(120deg,var(--accent),var(--accent-d));color:#06221f;
   font-weight:800;border-color:transparent}
 
-/* ===== 三国投放盒 ===== */
+/* ===== 三地区投放盒 ===== */
 .natgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
 .natbox{background:linear-gradient(165deg,rgba(30,41,63,.9),rgba(22,30,48,.8));
   border:1px solid var(--line);border-radius:13px;padding:14px 13px}
@@ -352,7 +352,7 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 <div class="wrap">
 <header>
   <h1>TechMark 财务预测模型 v2</h1>
-  <p>三国×三产品 · 六期连续推演 · 迁厂/研发/融资/库存/税务全链路推演器</p>
+  <p>墨晶1/2/3 × 北美联盟·亚太共和·欧联邦 · 六期连续推演 · 已录入你第1-3期真实决策</p>
 </header>
 <div class="topnav">
   <button class="on" onclick="showPage('model',this)">📊 交互模型</button>
@@ -362,14 +362,13 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 <div id="page-model" class="page on">
 
 <div class="note full" style="border-left-color:var(--red);margin-bottom:14px">
-🔎 <b>数据出处声明（务必先读）</b>：本模型里<b>唯一经过材料核实</b>的是右侧「第6期夺奖目标」的五项财务标准（股价≥$168、销售增长≥5%、毛利率≥35%、存货资产比4%~9%、资产负债率≤25%）——这来自你给的官方目标图。<br>其余所有写死的数字——各产品各国的<b>需求量、理想研发参数、成本阶梯、通胀/汇率/税率/折旧/库存费、期初现金/权益/固定资产、股价估算系数</b>等——<b>均未经你的材料核对，是为了让模型能跑起来而填的推演假设值（占位）</b>，不代表 TechMark 教材/官方口径。请以你手上的真实成本表/需求表/规则页为准；把真实数据发我，我就用真值替换占位。
+🔎 <b>数据出处声明（务必先读）</b>：<br>✅ <b>真实数据</b>：①「第6期夺奖目标」五项财务标准（股价≥$168、销售增长≥5%、毛利率≥35%、存货资产比4%~9%、资产负债率≤25%），来自官方目标图；②<b>第1-3期的全部己方决策</b>（价格/产量/市场推广/销售代表与时间分配/研发感抗·内阻·预算/生产地点/负债上限），已从 techmarkchina.cn 你的账号原样录入，可切季度核对。第4-6期空白待明天。<br>⚠️ <b>仍是占位（未核实）</b>：驱动预测的<b>市场需求量、理想研发参数、成本阶梯、通胀/汇率/税率/折旧/库存费、期初现金/权益/固定资产、股价估算系数</b>等——这些是为让模型能算通而填的假设，<b>不代表官方口径</b>，故左侧损益/ROE/达标结果只是粗略推演。拿到真实成本表/需求表/规则页发我即替换。
 </div>
 
 <div class="toolbar">
-  <button class="primary" onclick="applyPreset('best')">📈 一键最优打法</button>
-  <button onclick="applyPreset('hist')">📋 历史基准</button>
-  <button onclick="applyPreset('reset')">↺ 重置</button>
-  <span style="font-size:12px;color:var(--dim)">｜连续经营，切季度看累计扭亏</span>
+  <button class="primary" onclick="applyPreset('reset')">↺ 恢复我的真实决策(1-3期)</button>
+  <button onclick="applyPreset('blank')">🧹 清空重填</button>
+  <span style="font-size:12px;color:var(--dim)">｜已录入第1-3期真实决策，切季度查看；第4-6期空白待明天</span>
 </div>
 
 <!-- 季度进度条(含每季盈亏) -->
@@ -414,11 +413,11 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 
 <div class="grid">
   <div class="card">
-    <h2>🔬 二·研发决策 <span class="badge" id="curProd">磁2</span></h2>
+    <h2>🔬 二·研发决策 <span class="badge" id="curProd">墨晶2</span></h2>
     <div class="mtabs">
-      <div class="mtab m1" data-p="0" onclick="selProd(0)">磁1</div>
-      <div class="mtab m2 on" data-p="1" onclick="selProd(1)">磁2</div>
-      <div class="mtab m3" data-p="2" onclick="selProd(2)">磁3</div>
+      <div class="mtab m1" data-p="0" onclick="selProd(0)">墨晶1</div>
+      <div class="mtab m2 on" data-p="1" onclick="selProd(1)">墨晶2</div>
+      <div class="mtab m3" data-p="2" onclick="selProd(2)">墨晶3</div>
     </div>
     <div id="prodCtrls"></div>
   </div>
@@ -461,7 +460,7 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 </div>
 
 <div class="note full" style="margin-top:16px">
-⚠️ <b>模型口径说明</b>：以下是本模型内置的一套<b>推演假设</b>（<b>未经你的材料逐条核实，数值/规则可能与 TechMark 官方口径不符</b>，仅为让全链路能算通）——成本-产量阶梯、本地建厂成本、通胀累加(尤0/纳5%/尼1.25%每季)、汇率、库存费10%、销代$150K+新聘/调人培训$50K+解雇成本$150K、销代人数上限(尤≤13/16・纳≤8/9・尼≤11/12)、管理费$200K/人、折旧2.5%/季、迁厂首次$1M安装(入固定资产)+$100K开办(仅首次)、债务25%/年单利、短投8%/年、现金$5M-$10M自动借/投并逐季结转、所得税38%、产量配额(单市场≤999K/单产品≤2997K)、研发成功需预算达标(不足则参数不变、钱白花)、销售时间70/20/10、价格弹性(高于价格锚→销量降)、广告领先者效应、市场份额双口径。<br><b>简化处理</b>：销量采用「参数匹配×广告×销代×价格弹性×销售时间×需求上限」简化需求函数；应收账款回收期按即期近似(仅移动收现时点、不影响损益与ROE)；股票回购/独家生产权申请属资金腾挪/竞争前置动作、不改变单季盈亏故未建模。<b>凡上述税率/费率/上限/成本，请以你的真实规则页为准；给我真值即替换。</b>
+⚠️ <b>模型口径说明</b>：以下是本模型内置的一套<b>推演假设</b>（<b>未经你的材料逐条核实，数值/规则可能与 TechMark 官方口径不符</b>，仅为让全链路能算通）——成本-产量阶梯、本地建厂成本、通胀累加(北美0/亚太5%/欧联1.25%每季)、汇率、库存费10%、销代$150K+新聘/调人培训$50K+解雇成本$150K、销代人数上限(北美≤13/16・亚太≤8/9・欧联≤11/12)、管理费$200K/人、折旧2.5%/季、迁厂首次$1M安装(入固定资产)+$100K开办(仅首次)、债务25%/年单利、短投8%/年、现金$5M-$10M自动借/投并逐季结转、所得税38%、产量配额(单市场≤999K/单产品≤2997K)、研发成功需预算达标(不足则参数不变、钱白花)、销售时间70/20/10、价格弹性(高于价格锚→销量降)、广告领先者效应、市场份额双口径。<br><b>简化处理</b>：销量采用「参数匹配×广告×销代×价格弹性×销售时间×需求上限」简化需求函数；应收账款回收期按即期近似(仅移动收现时点、不影响损益与ROE)；股票回购/独家生产权申请属资金腾挪/竞争前置动作、不改变单季盈亏故未建模。<b>凡上述税率/费率/上限/成本，请以你的真实规则页为准；给我真值即替换。</b>
 </div>
 </div>
 
@@ -469,60 +468,56 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 
 <div id="page-drift" class="page">
   <div class="imgcard">
-    <h2>🎯 三国九点参数漂移定位图</h2>
-    <p>磁1/磁2/磁3 × 尤菲亚/纳达卡/尼赫鲁 × 第1-6期 理想参数(扭矩·电阻)的漂移方向。同型号三国方向相反→无法通吃，需按国差异化研发。<b>注：此图基于模型内置的占位理想参数绘制，未经材料核实，仅示意结构。</b></p>
-    <img src="drift-map.png" alt="参数漂移定位图">
-    <a class="dl" href="drift-map.png" download>⬇ 下载原图</a>
+    <h2>🎯 参数漂移定位图</h2>
+    <p>⚠️ 旧版图片基于杜撰数据(错误的产品/地区/参数名)绘制，已下线以免误导。待拿到真实理想参数表后重绘：墨晶1/2/3 × 北美联盟/亚太共和/欧联邦 × 各期 感抗·内阻 的漂移方向。</p>
   </div>
 </div>
 
 <div id="page-cheat" class="page">
   <div class="imgcard">
-    <h2>📋 TechMark 速查表合集</h2>
-    <p>三产品毛利、成本阶梯、通胀/汇率/税务/融资等速查表。<b>注：表内数值为模型内置的占位假设，未经材料核实，请以你的真实规则页为准。</b></p>
-    <img src="cheatsheet.png" alt="速查表合集">
-    <a class="dl" href="cheatsheet.png" download>⬇ 下载原图</a>
+    <h2>📋 速查表合集</h2>
+    <p>⚠️ 旧版速查表基于未经核实的占位数据，已下线。待拿到真实成本表/规则页后重制。</p>
   </div>
 </div>
 <script>
 // ===== 未经材料核实的推演假设值(占位) =====
-// 【占位】每产品 6 期 × 三国(尤/纳/尼)需求量。以下数字未经任何官方材料核实,仅为让模型能算通而填的假设,拿到真实需求表后替换。
+// 【占位】每产品 6 期 × 三地区(北美/亚太/欧联)需求量。以下数字未经任何官方材料核实,仅为让模型能算通而填的假设,拿到真实需求表后替换。
 const DEMAND={
  m1:[[2223000,1200625,1064250],[3515182,1277178,1732485],[1478559,766582,685821],[871590,463475,830711],[711000,370000,667000],[492000,264000,564000]],
  m2:[[1163147,494143,917493],[1422813,333956,1219871],[1911212,496564,2126350],[2457062,524899,2657497],[3150000,526000,4046000],[4060000,557000,5884000]],
  m3:[[3513705,147319,214504],[3861643,168294,215544],[3426611,181457,231389],[3189809,159095,229428],[3150000,177000,238000],[3024000,182000,245000]]
 };
-// 【占位】每产品 6 期 × 三国理想参数[扭矩,电阻]。未经材料核实的假设值,拿到真实理想参数表后替换。
+// 【占位】每产品 6 期 × 三地区理想参数[感抗,内阻]。未经材料核实的假设值,拿到真实理想参数表后替换。
 const IDEAL={
  m1:[[[4.2,3.9],[4.0,4.3],[4.0,2.2]],[[3.9,3.9],[3.8,4.3],[4.2,2.4]],[[3.6,3.7],[3.6,4.2],[4.3,2.5]],[[3.2,3.6],[3.4,4.1],[4.5,2.7]],[[2.9,3.5],[3.2,4.0],[4.7,2.9]],[[2.6,3.4],[3.0,4.0],[4.8,3.0]]],
  m2:[[[2.5,2.4],[2.6,2.6],[3.5,2.7]],[[2.6,2.5],[2.5,2.6],[3.7,2.7]],[[2.6,2.5],[2.5,2.7],[3.8,2.8]],[[2.7,2.6],[2.5,2.7],[4.2,2.9]],[[2.7,2.7],[2.5,2.8],[4.4,2.9]],[[2.8,2.7],[2.4,2.8],[4.6,3.0]]],
  m3:[[[1.9,3.5],[1.1,1.5],[4.4,1.5]],[[2.2,3.5],[1.2,1.5],[4.2,1.5]],[[2.6,3.5],[1.3,1.5],[3.9,1.6]],[[2.9,3.5],[1.4,1.5],[3.7,1.7]],[[3.3,3.5],[1.5,1.5],[3.5,1.8]],[[3.6,3.5],[1.6,1.5],[3.2,1.8]]]
 };
 // 【占位】成本阶梯: [[上限,本地产成本,运A,运B]] — 数值未经材料核实,拿到真实成本表后替换。
-// 尤菲亚生产: [上限, 尤菲亚产成本, 运纳达卡, 运尼赫鲁]
+// 北美联盟生产: [上限, 北美产成本, 运亚太, 运欧联]
 const COST={
  m1:[[562500,38.40,50.69,45.31],[675000,35.20,46.46,41.54],[825000,32.00,42.24,37.76],[937500,25.60,33.79,30.21],[Infinity,22.40,29.57,26.43]],
  m2:[[250000,16.80,22.18,19.82],[450000,15.40,20.33,18.17],[550000,14.00,18.48,16.52],[625000,11.20,14.78,13.22],[Infinity,9.80,12.94,11.56]],
  m3:[[325000,30.60,40.39,36.11],[540000,28.05,37.03,33.10],[660000,25.50,33.66,30.09],[750000,20.40,26.93,24.07],[Infinity,17.85,23.56,21.06]]
 };
-// 【占位】在纳达卡生产: [上限, 纳达卡产成本, 运尤菲亚, 运尼赫鲁] — 未经核实
+// 【占位】在亚太共和生产: [上限, 亚太产成本, 运北美, 运欧联] — 未经核实
 const COST_L={
  m1:[[562500,23.52,28.69,28.93],[675000,22.40,27.33,27.55],[825000,22.40,27.33,27.55],[937500,22.40,27.33,27.55],[Infinity,21.28,25.96,26.17]],
  m2:[[250000,10.29,12.55,12.66],[450000,9.80,11.96,12.05],[550000,9.80,11.96,12.05],[625000,9.80,11.96,12.05],[Infinity,9.31,11.36,11.45]],
  m3:[[325000,18.74,22.87,23.05],[540000,17.85,21.78,21.96],[660000,17.85,21.78,21.96],[750000,17.85,21.78,21.96],[Infinity,16.96,20.69,20.86]]
 };
-// 【占位】在尼赫鲁生产: [上限, 尼赫鲁产成本, 运尤菲亚, 运纳达卡] — 未经核实
+// 【占位】在欧联邦生产: [上限, 欧联产成本, 运北美, 运亚太] — 未经核实
 const COST_N={
  m1:[[562500,46.08,48.84,70.04],[675000,42.24,44.77,64.20],[825000,38.40,40.70,58.37],[937500,26.88,28.49,40.86],[Infinity,19.20,20.35,29.18]],
  m2:[[250000,20.16,21.37,30.64],[450000,18.48,19.59,28.09],[550000,16.80,17.81,25.54],[625000,11.76,12.47,17.88],[Infinity,8.40,8.90,12.77]],
  m3:[[325000,36.72,38.92,55.81],[540000,33.66,35.68,51.16],[660000,30.60,32.44,46.51],[750000,21.42,22.71,32.56],[Infinity,15.30,16.22,23.26]]
 };
 let HISTPRICE={m1:40,m2:26,m3:32};   // 【占位】价格锚:售价相对它偏离→价格弹性。数值未核实,可在"标定"区改成本局真实基准价
-const INFLAT=[0,0.05,0.0125];        // 【占位】三国每季通胀累加,未经核实
-const NATNAME=['尤菲亚','纳达卡','尼赫鲁'];
-const PKEY=['m1','m2','m3'],PNAME=['磁1','磁2','磁3'];
-const SALESTIME={m1:0.70,m2:0.20,m3:0.10}; // 【占位】销售时间分配,未经核实
-const INIT_REPS=[12,7,10]; // 初始销售代表 尤/纳/尼
+const INFLAT=[0,0.05,0.0125];        // 【占位】三地区每季通胀累加,未经核实
+const NATNAME=['北美联盟','亚太共和','欧联邦'];  // 真实地区名(来自 techmarkchina.cn: 1=北美 2=亚太 3=欧联)
+const PKEY=['m1','m2','m3'],PNAME=['墨晶1','墨晶2','墨晶3'];  // 真实产品名(墨晶1/2/3)
+const SALESTIME={m1:0.70,m2:0.20,m3:0.10}; // 【占位】仅作缺省;真实按各期"销售代表时间分配"逐期录入
+const INIT_REPS=[12,7,10]; // 各地区初始销售代表 北美/亚太/欧联(占位)
 let START_CASH=5000000, START_EQUITY=30000000, START_FIXED=25000000; // 【占位】期初现金/权益/固定资产,未经核实
 // ===== 可编辑标定参数(显性化"已知信息"): 成本表/股价公式没给全时,这些都是可调假设 =====
 let COST_SCALE=1;        // 单位成本整体缩放(真实成本是模型的N倍就填N;成本表到手按此校准)
@@ -557,7 +552,7 @@ let cur=0, curP=1; // 默认第1期(六期制,逐期推进)
 let stockPrice=null; // 夺奖目标: 游戏内实际股价, 用户手填(游戏另有定价公式, 本模型不推算)
 // 研发参数是"累积生效"的: 记录每产品当前实际参数(初始=首季理想附近的历史值)
 // 简化: 每季可设目标参数, 研发预算够则本季生效, 否则维持上季
-const PARAM_INIT={m1:[4.2,3.9],m2:[2.5,2.4],m3:[1.9,3.5]}; // 首季起始(尤菲亚Q1理想)
+const PARAM_INIT={m1:[4.2,3.9],m2:[2.5,2.4],m3:[1.9,3.5]}; // 首季起始基线(占位)
 // ===== 竞争对手·每期决策结构(在 PARAM_INIT 之后初始化) =====
 function rNat(){ return {price:0, ad:0, reps:0}; } // 对手某市场投放: 定价/广告$K/销代; 全为0=该市场无对手
 function blankRival(pk){ return {tq:PARAM_INIT[pk][0], rs:PARAM_INIT[pk][1], nat:[rNat(),rNat(),rNat()]}; }
@@ -590,25 +585,25 @@ function resolveParam(pk){
 }
 
 function unitCostBase(pk,site,destNi,qty){
- // 三套产地表(数值为占位假设): site 0=尤菲亚 1=纳达卡 2=尼赫鲁
+ // 三套产地表(数值为占位假设): site 0=北美联盟 1=亚太共和 2=欧联邦
  // 每套四列: [上限, 本地产成本, 运到A国, 运到B国]
- // 尤: 本地=尤 / 列2=运纳 / 列3=运尼
- // 纳: 本地=纳 / 列2=运尤 / 列3=运尼
- // 尼: 本地=尼 / 列2=运尤 / 列3=运纳
+ // 北美: 本地=北美 / 列2=运亚太 / 列3=运欧联
+ // 亚太: 本地=亚太 / 列2=运北美 / 列3=运欧联
+ // 欧联: 本地=欧联 / 列2=运北美 / 列3=运亚太
  const tbl = site===0?COST : site===1?COST_L : COST_N;
  const t=tbl[pk]; let row=t[t.length-1];
  for(const r of t){ if(qty<r[0]){row=r;break;} }
  let base;
  if(site===destNi){ base=row[1]; }                 // 本地产本地卖
- else if(site===0){ base=destNi===1?row[2]:row[3]; } // 尤菲亚产: 列[2]=纳 列[3]=尼
- else if(site===1){ base=destNi===0?row[2]:row[3]; } // 纳达卡产: 列[2]=尤 列[3]=尼
- else { base=destNi===0?row[2]:row[3]; }             // 尼赫鲁产: 列[2]=尤 列[3]=纳
+ else if(site===0){ base=destNi===1?row[2]:row[3]; } // 北美产: 列[2]=亚太 列[3]=欧联
+ else if(site===1){ base=destNi===0?row[2]:row[3]; } // 亚太产: 列[2]=北美 列[3]=欧联
+ else { base=destNi===0?row[2]:row[3]; }             // 欧联产: 列[2]=北美 列[3]=亚太
  return base*COST_SCALE;
 }
 
 function adFactor(ad,pk){ if(pk==='m3')return 1; return 0.55+0.45*Math.min(1,ad/450);}
-function repFactor(reps,pk){ // 销代×销售时间: 该产品可用销售力
- const eff=reps*SALESTIME[pk]; return 0.35+0.65*Math.min(1,eff/8);}
+function repFactor(reps,pk){ // reps=已按"时间分配"折算的该产品等效销代人数
+ const eff=reps; return 0.35+0.65*Math.min(1,eff/8);}
 // 价格弹性(P11): 定价高于历史价→销量受压, 低于历史价→销量上升. 以历史价为锚点线性弹性
 function priceFactor(price,pk){
  const base=HISTPRICE[pk];
@@ -648,7 +643,7 @@ function rivalAttract(pk,ni,q){
 }
 
 // ===== 销代限额(P15 审计师上限, 不可突破) =====
-const REP_CAP=[[13,8,11],[13,8,11],[14,9,12],[14,9,12],[15,10,13],[15,10,13]]; // 6期 各期尤/纳/尼销代上限(每两期+1递增, Q5-Q6为外推)
+const REP_CAP=[[13,8,11],[13,8,11],[14,9,12],[14,9,12],[15,10,13],[15,10,13]]; // 6期 各期北美/亚太/欧联销代上限(每两期+1递增, Q5-Q6为外推)
 
 // ===== 核心计算: 算第 q 季 (carryCash=上季期末现金, extraMove=本季首次换厂开办费, prevRepsByNat=上季各国销代) =====
 function calcQ(q, carryFixed, carryEquity, prevReps, carryCash, extraMove, prevRepsByNat){
@@ -693,7 +688,7 @@ function calcQ(q, carryFixed, carryEquity, prevReps, carryCash, extraMove, prevR
  repCost=totalReps*150000;
  // 销代限额校验(P15): 各国不可超审计师上限
  const capRow=REP_CAP[q]||REP_CAP[REP_CAP.length-1];
- for(let ni=0;ni<3;ni++){ if(repsByNat[ni]>capRow[ni]) quotaWarn.push(NATNAME[ni]+'销代'+repsByNat[ni]+'人超限('+capRow[ni]+')'); }
+ for(let ni=0;ni<3;ni++){ if(repsByNat[ni]>capRow[ni]) quotaWarn.push(NATNAME[ni]+'销代'+repsByNat[ni].toFixed(0)+'人>占位上限'+capRow[ni]+'(未核实,仅提示)'); }
  // 新聘培训 + 解雇成本 + 跨国调人再培训(P15, 按各国增减分别算)
  const prevBN=prevRepsByNat||INIT_REPS.slice();
  for(let ni=0;ni<3;ni++){
@@ -818,13 +813,13 @@ function renderCtrls(){
  const okFlag=p._need>0?(p._ok?'<span class="flag ok">已生效</span>':'<span class="flag bad">未生效·预算差 $'+Math.max(0,needM-(p.rd||0)).toFixed(2)+'M</span>'):'';
  // 目标未生效时: 说明当前销量按哪套参数算, 并给一键补足
  const fundBtn = (p._need>0 && !p._ok)
-   ? `<div class="hint" style="color:var(--red)">⚠️ 研发预算不足，本季销量仍按<b>生效参数 扭${eff[0].toFixed(1)}/阻${eff[1].toFixed(1)}</b>计算（你设的目标尚未落地）
+   ? `<div class="hint" style="color:var(--red)">⚠️ 研发预算不足，本季销量仍按<b>生效参数 感${eff[0].toFixed(1)}/阻${eff[1].toFixed(1)}</b>计算（你设的目标尚未落地）
       <button onclick="fundRD()" style="margin-top:6px;display:block;width:100%;padding:7px;border:none;border-radius:8px;background:linear-gradient(90deg,#4fd1c5,#38a89d);color:#06221f;font-weight:800;font-family:inherit;cursor:pointer">▶ 补足到 $${Math.min(6,needM).toFixed(2)}M 让目标生效</button></div>`
    : `<div class="hint">达此目标需 $${needM.toFixed(2)}M 研发预算；预算够→目标落地，不够→维持上季参数(钱白花)</div>`;
  document.getElementById('prodCtrls').innerHTML=`
-  <div class="ctrl"><label>研发目标-扭矩 <span>${tgtTq.toFixed(1)}</span></label>
+  <div class="ctrl"><label>研发目标-感抗期望值 <span>${tgtTq.toFixed(1)}</span></label>
    ${slRow('P:tq',tgtTq,1,5,0.1)}</div>
-  <div class="ctrl"><label>研发目标-电阻 <span>${tgtRs.toFixed(1)}</span></label>
+  <div class="ctrl"><label>研发目标-内阻期望值 <span>${tgtRs.toFixed(1)}</span></label>
    ${slRow('P:rs',tgtRs,1,5,0.1)}</div>
   <div class="ctrl"><label>研发预算($M) ${okFlag}<span>$${(p.rd||0).toFixed(2)}M</span></label>
    ${slRow('RD',(p.rd||0),0,6,0.05)}
@@ -837,7 +832,7 @@ function renderCtrls(){
     ${slRow('N:'+ni+':qty',x.qty,0,999000,1000)}</div>
    <div class="ctrl"><label style="font-size:11px">产地(省关税)</label>
     <div class="seg">${[0,1,2].map(s=>`<button class="${x.site===s?'on':''}" onclick="setN(${ni},'site',${s})">${NATNAME[s]}</button>`).join('')}</div>
-    <div class="hint">非尤菲亚首次:+$1M安装+$100K开办</div></div>
+    <div class="hint">迁厂首次:+$1M安装+$100K开办(占位规则,未核实)</div>
   </div>`;
  }
  document.getElementById('prodSiteCtrls').innerHTML=hp;
@@ -845,18 +840,23 @@ function renderCtrls(){
  let hs='';
  for(let ni=0;ni<3;ni++){const x=p.nat[ni];
   hs+=`<div class="natbox"><h3>${NATNAME[ni]}</h3>
-   <div class="ctrl"><label>定价($EU) <span>$${x.price}</span></label>
+   <div class="ctrl"><label>定价($) <span>$${x.price}</span></label>
     ${slRow('N:'+ni+':price',x.price,10,90,1)}</div>
-   <div class="ctrl"><label>销售代表 <span>${x.reps}</span></label>
+   <div class="ctrl"><label>销售代表(等效) <span>${(+x.reps).toFixed(1)}</span></label>
     ${slRow('N:'+ni+':reps',x.reps,0,20,1)}</div>
-   ${pk!=='m3'?`<div class="ctrl"><label>广告($K) <span>$${x.ad}K</span></label>
-    ${slRow('N:'+ni+':ad',x.ad,0,999,5)}</div>`:'<div class="hint">磁3不打广告</div>'}
+   ${pk!=='m3'?`<div class="ctrl"><label>市场推广预算($K) <span>$${x.ad}K</span></label>
+    ${slRow('N:'+ni+':ad',x.ad,0,999,5)}</div>`:'<div class="hint">墨晶3不打广告</div>'}
   </div>`;
  }
+ // 销售代表原始录入(地区总人数 + 本产品时间分配)——faithful record
+ const rr=Q[cur].repsReg, al=Q[cur].alloc&&Q[cur].alloc[pk];
+ if(rr&&al){
+  hs+=`<div class="note full" style="grid-column:1/-1;margin-top:2px;font-size:11.5px">📋 本期销售代表(地区总人数)：北美 <b>${rr[0]}</b> ／ 亚太 <b>${rr[1]}</b> ／ 欧联 <b>${rr[2]}</b>　｜　${PNAME[curP]} 时间分配：北美 ${al[0]} ／ 亚太 ${al[1]} ／ 欧联 ${al[2]}　（上方"等效"= 地区总数 × 该产品时间占比）</div>`;
+ }
  document.getElementById('salesCtrls').innerHTML=hs;
- const notes={m1:'磁1高端品牌型·需求萎缩·广告主战场·销售时间70%',
-  m2:'磁2成长明星·需求强增(尼最猛)·参数尤纳超稳·毛利率62%最高→核心利润引擎·销售时间20%',
-  m3:'磁3通用标准品·仅尤菲亚需求大·靠规模压成本·不打广告·销售时间10%'};
+ const notes={m1:'墨晶1(占位描述,未核实,请以真实产品资料为准)',
+  m2:'墨晶2(占位描述,未核实)',
+  m3:'墨晶3(占位描述,未核实,该产品不投广告)'};
  document.getElementById('prodNote').textContent='💡 '+notes[pk];
  document.getElementById('finCtrls').innerHTML=`
   <div class="ctrl"><label>组员数(管理费$200K/人/季) <span>${Q[cur].members}人</span></label>
@@ -864,7 +864,7 @@ function renderCtrls(){
   <div class="ctrl"><label>债务上限($M·信用额度) <span>$${Q[cur].debtCap}M</span></label>
    ${slRow('debtCap',Q[cur].debtCap,0,30,1)}
    <div class="hint">债务25%/年(6.25%/季)单利·极贵；现金<$5M自动借足、>$10M自动短投8%/年</div></div>
-  <div class="note">已内置：折旧2.5%/季(固定资产/40)｜库存费=期末存货10%｜所得税38%｜通胀 尤0/纳5%/尼1.25%每季累加｜产量单市场≤999K｜汇率 纳4:1/尼2:1(定价与成本均已统一为$EU口径,尼元五年从8:1升至2:1持续升值→尼市场实得改善)</div>`;
+  <div class="note">⚠️以下为占位规则(未经材料核实)：折旧2.5%/季｜库存费=期末存货10%｜所得税38%｜通胀 北美0/亚太5%/欧联1.25%每季累加｜产量单市场≤999K｜汇率等——真实规则请以你的规则页为准</div>`;
 }
 // 拖动条 + 联动数字框: range 实时(oninput), number 失焦/回车才提交(onchange)避免打字被重建打断; 两者共用 dset, renderAll 时同步回填
 function slRow(key,val,min,max,step){
@@ -915,7 +915,7 @@ function renderResults(){
   const pk=PKEY[curP], ms=matchScore(pk,ni,cur), id=IDEAL[pk][cur][ni];
   const col=ms>0.7?'var(--green)':ms>0.4?'var(--accent2)':'var(--red)';
   mh+=`<div class="barwrap"><div style="font-size:12px;margin-bottom:2px">${NATNAME[ni]}
-    <span style="color:var(--dim)">理想 扭${id[0]}/阻${id[1]}</span></div>
+    <span style="color:var(--dim)">理想 感${id[0]}/阻${id[1]}</span></div>
    <div class="bar"><div class="fill" style="width:${(ms*100).toFixed(0)}%;background:${col}"></div>
     <div class="txt">匹配度 ${(ms*100).toFixed(0)}%</div></div></div>`;
  }
@@ -970,7 +970,7 @@ function renderResults(){
 }
 
 // ===== 决策/标定/目标持久化: 刷新不丢失 =====
-const LS_KEY='techmark_state_v1';
+const LS_KEY='techmark_state_v2';  // v2: 真实决策录入 + 术语更正(墨晶/北美-亚太-欧联/感抗-内阻)
 function persist(){
  try{ localStorage.setItem(LS_KEY, JSON.stringify({
   Q,STRATEGY,cur,curP,stockPrice,COMPET,
@@ -999,6 +999,37 @@ function restore(){
   if(typeof o.START_FIXED==='number') START_FIXED=o.START_FIXED;
   if(o.REV_T&&typeof o.REV_T==='object') REV_T=o.REV_T;
  }catch(e){}
+}
+
+// ===== 真实决策录入 (来源: techmarkchina.cn 该玩家账号, 第1-3期已做; 第4-6期待明天) =====
+// nat 顺序固定 = [北美联盟, 亚太共和, 欧联邦]; ad 单位=$K; site=生产地(0北美/1亚太/2欧联)
+function loadRealDecisions(){
+ function mk(price,qty,ad,site){ return [0,1,2].map(i=>({price:price[i],qty:qty[i],reps:0,ad:ad[i],site:site})); }
+ // 销售代表: 真实录的是"各地区总人数 + 各产品时间分配", 等效销代 = 地区总数 × 该产品时间占比
+ function applyReps(q, reg, alloc){
+  q.repsReg=reg.slice(); q.alloc={m1:alloc.m1.slice(),m2:alloc.m2.slice(),m3:alloc.m3.slice()};
+  ['m1','m2','m3'].forEach(pk=>{ for(let i=0;i<3;i++) q.prod[pk].nat[i].reps=+(reg[i]*alloc[pk][i]).toFixed(2); });
+ }
+ const Q0=blankQ(), Q1=blankQ(), Q2=blankQ();
+ // ---- 第1期(该期仅决策"价格+产量"; 研发沿用第一期决策1A的预备研发) ----
+ Q0.prod.m1={tq:4.2,rs:2.4,rd:1.40,nat:mk([40,45,38],[350000,200000,400000],[0,0,0],0)};
+ Q0.prod.m2={tq:2.6,rs:2.5,rd:1.20,nat:mk([25,26,26],[250000,0,0],[0,0,0],0)};
+ Q0.prod.m3={tq:2.2,rs:3.5,rd:1.20,nat:mk([32,32,32],[0,0,0],[0,0,0],0)};
+ Q0.debtCap=30; Q0.members=3; Q0.repsReg=[0,0,0]; Q0.alloc={m1:[0,0,0],m2:[0,0,0],m3:[0,0,0]};
+ // ---- 第2期 ---- (生产地由1A"下期生产地点"决定: 墨晶1→北美, 墨晶2→欧联, 墨晶3→北美)
+ Q1.prod.m1={tq:4.2,rs:2.4,rd:0,nat:mk([38,40,42],[250000,150000,550000],[15,0,30],0)};
+ Q1.prod.m2={tq:2.6,rs:2.5,rd:0,nat:mk([33,26,35],[550000,130000,300000],[35,0,70],2)};
+ Q1.prod.m3={tq:2.2,rs:3.5,rd:0,nat:mk([36,33,34],[600000,25000,40000],[0,0,0],0)};
+ Q1.debtCap=30; Q1.members=3;
+ applyReps(Q1,[12,2,15],{m1:[0.2,0.2,0.2],m2:[0.7,0.7,0.7],m3:[0.1,0.1,0.1]});
+ // ---- 第3期 ---- (生产地由第2期"下期生产地点"首值: 墨晶1→欧联, 墨晶2→欧联, 墨晶3→北美)
+ Q2.prod.m1={tq:3.6,rs:3.7,rd:1.00,nat:mk([42,38,40],[120000,100000,0],[30,15,20],2)};
+ Q2.prod.m2={tq:3.8,rs:2.8,rd:0.95,nat:mk([30,26,33],[300000,80000,750000],[40,15,80],2)};
+ Q2.prod.m3={tq:2.6,rs:3.5,rd:0.75,nat:mk([33,31,33],[700000,20000,40000],[0,0,0],0)};
+ Q2.debtCap=30; Q2.members=3;
+ applyReps(Q2,[14,7,12],{m1:[0.3,0.3,0.2],m2:[0.3,0.4,0.7],m3:[0.4,0.3,0.1]});
+ Q=[Q0,Q1,Q2,blankQ(),blankQ(),blankQ()];
+ cur=0; curP=0;
 }
 
 // ===== 第6期夺奖目标达成度(末季期终口径) =====
@@ -1078,9 +1109,9 @@ function renderCalib(){
  const el=document.getElementById('calibCtrls'); if(!el) return;
  el.innerHTML =
   calibField('COST_SCALE','成本缩放',COST_SCALE,0.01,'×','真实成本÷模型占位成本, 拿到成本表调到吻合')
- +calibField('HP_m1','磁1 价格锚',HISTPRICE.m1,1,'$','本局磁1需求弹性基准价')
- +calibField('HP_m2','磁2 价格锚',HISTPRICE.m2,1,'$','本局磁2需求弹性基准价')
- +calibField('HP_m3','磁3 价格锚',HISTPRICE.m3,1,'$','本局磁3需求弹性基准价')
+ +calibField('HP_m1','墨晶1 价格锚',HISTPRICE.m1,1,'$','本局墨晶1需求弹性基准价')
+ +calibField('HP_m2','墨晶2 价格锚',HISTPRICE.m2,1,'$','本局墨晶2需求弹性基准价')
+ +calibField('HP_m3','墨晶3 价格锚',HISTPRICE.m3,1,'$','本局墨晶3需求弹性基准价')
  +calibField('SHARES','流通股数',SHARES,10000,'股','EPS/每股净资产的分母')
  +calibField('STOCK_PE','市盈率倍数',STOCK_PE,0.5,'×','股价估算: ×年化EPS')
  +calibField('STOCK_BOOKMULT','每股净资产权重',STOCK_BOOKMULT,0.1,'×','股价估算: ×每股净资产')
@@ -1229,14 +1260,14 @@ function renderCompet(){
    <div class="ctrl"><label>对手销售代表 <span>${x.reps}</span></label>
     ${slRow('RN:'+ni+':reps',x.reps,0,20,1)}</div>
    ${pk!=='m3'?`<div class="ctrl"><label>对手广告($K) <span>$${x.ad}K</span></label>
-    ${slRow('RN:'+ni+':ad',x.ad,0,999,5)}</div>`:'<div class="hint">磁3不打广告</div>'}
+    ${slRow('RN:'+ni+':ad',x.ad,0,999,5)}</div>`:'<div class="hint">墨晶3不打广告</div>'}
   </div>`;
  }
  el.innerHTML=toggle+`
   <div class="hint" style="margin-top:10px">正在录入 <b>第 ${cur+1} 季 · ${PNAME[curP]}</b> 的对手决策(切换上方季度/产品页签即切换录入期)。三个市场留空=该市场无对手, 你独占需求上限。</div>
   <div class="grid2" style="margin-top:10px">
-   <div class="ctrl"><label>对手 研发-扭矩 <span>${rtq.toFixed(1)}</span></label>${slRow('RC:tq',rtq,1,5,0.1)}</div>
-   <div class="ctrl"><label>对手 研发-电阻 <span>${rrs.toFixed(1)}</span></label>${slRow('RC:rs',rrs,1,5,0.1)}</div>
+   <div class="ctrl"><label>对手 研发-感抗 <span>${rtq.toFixed(1)}</span></label>${slRow('RC:tq',rtq,1,5,0.1)}</div>
+   <div class="ctrl"><label>对手 研发-内阻 <span>${rrs.toFixed(1)}</span></label>${slRow('RC:rs',rrs,1,5,0.1)}</div>
   </div>
   <div class="natgrid" style="margin-top:10px">${hn}</div>
   <div class="ctrl" style="margin-top:10px"><label>对手本期预计最高股价(夺魁对比·可留空) <span>${rq.rivalStock>0?('$'+rq.rivalStock):'—'}</span></label>
@@ -1247,38 +1278,10 @@ function renderAll(){renderRevTargets();renderStrat();renderCompet();renderCalib
  document.querySelectorAll('.qtab').forEach((t,i)=>t.classList.toggle('on',i===cur));}
 
 function applyPreset(t){
- if(t==='reset'){ Q=[blankQ(),blankQ(),blankQ(),blankQ(),blankQ(),blankQ()]; cur=0;curP=1; selProd(1); renderAll(); return; }
- if(t==='hist'){ // 历史基准:全在尤菲亚产,历史价,初始销代
-  Q=[blankQ(),blankQ(),blankQ(),blankQ(),blankQ(),blankQ()];
-  for(let q=0;q<6;q++){
-   Q[q].prod.m1.nat=[nd(40,400000),nd(40,0),nd(40,0)];Q[q].prod.m1.nat[0].reps=8;Q[q].prod.m1.nat[0].ad=450;
-   Q[q].prod.m2.nat=[nd(26,300000),nd(26,0),nd(26,0)];Q[q].prod.m2.nat[0].reps=3;Q[q].prod.m2.nat[0].ad=50;
-   Q[q].prod.m3.nat=[nd(32,500000),nd(32,0),nd(32,0)];Q[q].prod.m3.nat[0].reps=1;
-  }
-  cur=0;curP=1;selProd(1);renderAll();return;
- }
- if(t==='best'){
-  Q=[blankQ(),blankQ(),blankQ(),blankQ(),blankQ(),blankQ()];
-  for(let q=0;q<6;q++){
-   const id2E=IDEAL.m2[q][0],id2N=IDEAL.m2[q][2],id3E=IDEAL.m3[q][0];
-   // 磁2主攻: 尤菲亚(参数稳)+尼赫鲁(追扭矩,本地产省关税)
-   Q[q].prod.m2.tq=id2E[0];Q[q].prod.m2.rs=id2E[1];Q[q].prod.m2.rd=q===0?0.3:0.15;
-   const m2=Q[q].prod.m2.nat;
-   m2[0]=nd(26,800000);m2[0].reps=8;m2[0].ad=120;m2[0].site=0;
-   // 尼赫鲁磁2: 尤菲亚产运尼($16.52)比尼本地产($16.80)更便宜→留在尤产
-   m2[2]=nd(30,600000);m2[2].reps=7;m2[2].ad=120;m2[2].site=0;
-   // 磁3尤菲亚走量(参数追Q理想)
-   Q[q].prod.m3.tq=id3E[0];Q[q].prod.m3.rs=id3E[1];Q[q].prod.m3.rd=q===0?0.2:0.15;
-   Q[q].prod.m3.nat[0]=nd(32,900000);Q[q].prod.m3.nat[0].reps=4;Q[q].prod.m3.nat[0].site=0;
-   // 磁1收缩:只做尼赫鲁高价(尼需求Q2反弹,参数升扭矩)
-   Q[q].prod.m1.tq=IDEAL.m1[q][2][0];Q[q].prod.m1.rs=IDEAL.m1[q][2][1];Q[q].prod.m1.rd=q===0?0.4:0.1;
-   Q[q].prod.m1.nat[2]=nd(42,300000);Q[q].prod.m1.nat[2].reps=4;Q[q].prod.m1.nat[2].ad=200;Q[q].prod.m1.nat[2].site=2;
-   Q[q].members=3; Q[q].debtCap=10;
-  }
-  cur=0;curP=1;selProd(1);renderAll();return;
- }
+ if(t==='reset'){ loadRealDecisions(); selProd(0); renderAll(); return; }        // 恢复已录入的三期真实决策
+ if(t==='blank'){ Q=[blankQ(),blankQ(),blankQ(),blankQ(),blankQ(),blankQ()]; cur=0;curP=1; selProd(1); renderAll(); return; }
 }
-restore();selProd(curP);renderAll();
+loadRealDecisions();restore();selProd(curP);renderAll();  // 先载入真实决策为默认, 有本地存档(v2)则覆盖
 
 function showPage(id,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
