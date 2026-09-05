@@ -316,7 +316,7 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 <div class="card full goalcard">
   <h2>🏆 第6期夺奖目标 <span class="badge" id="goalCount">0/5 达标</span></h2>
   <div id="goals" class="goalgrid"></div>
-  <div class="hint" style="margin-top:12px">五项全达标、且股价最高的组夺大奖。共 6 期模拟，四项财务比率按<b>第6期（期终）口径</b>实时核验；股票价格另有游戏公式，请从游戏中读出后填入核对 ≥$168。<b>注</b>：第5-6期无官方数据，需求量由 Q1-Q4 对数线性回归、理想参数由线性回归预测得出，仅供推演参考。</div>
+  <div class="hint" style="margin-top:12px">五项全达标、且股价最高的组夺大奖。共 6 期模拟，四项财务比率按<b>第6期（期终）口径</b>实时核验；股票价格另有游戏公式（本模型不推算，也<b>不影响左侧损益/ROE</b>），请从游戏中读出后填入，仅用于核对 ≥$168 是否达标。<b>注</b>：第5-6期无官方数据，需求量由 Q1-Q4 对数线性回归、理想参数由线性回归预测得出，仅供推演参考。</div>
 </div>
 
 <div class="grid">
@@ -798,7 +798,7 @@ function renderGoals(C){
  const invR = C.totalAsset>0 ? r.invVal/C.totalAsset : 0;    // 存货资产比
  const debtR = C.totalAsset>0 ? r.debt/C.totalAsset : 0;     // 资产负债率
  const items=[
-  {id:'goalStock', l:'期终股票价格', req:'≥ $168', cur:'input',
+  {id:'goalStock', l:'期终股票价格 <span style="color:var(--faint);font-weight:500">· 游戏读数</span>', req:'≥ $168', cur:'input',
     stat: stockPrice==null?null:stockPrice>=168},
   {l:'销售额增长率', req:'≥ 5%',
     cur: growth==null?'首季无对比':pct(growth), stat: growth==null?null:growth>=0.05},
@@ -813,7 +813,7 @@ function renderGoals(C){
   else if(it.stat){cls='ok';st='达标';}
   else {cls='bad';st='未达标';}
   const cv = it.cur==='input'
-    ? `<input type="number" inputmode="decimal" min="0" step="1" placeholder="填入股价" value="${stockPrice==null?'':stockPrice}" oninput="setStock(this.value)">`
+    ? `<input type="number" inputmode="decimal" min="0" step="1" placeholder="填游戏实际股价" value="${stockPrice==null?'':stockPrice}" oninput="setStock(this.value)">`
     : `<div class="gv">${it.cur}</div>`;
   const gr = it.id==='goalStock' ? stockHint() : ('目标 '+it.req);
   h+=`<div class="goalitem ${cls}"${it.id?` id="${it.id}"`:''}><div class="gstat">${st}</div>
@@ -823,7 +823,7 @@ function renderGoals(C){
  updateGoalCount();
 }
 function stockHint(){
- if(stockPrice==null) return '目标 ≥ $168';
+ if(stockPrice==null) return '≥ $168 · 从游戏读数填入(不影响财务)';
  const d=stockPrice-168;
  return d>=0 ? `目标 ≥ $168 · 已超 $${d.toLocaleString()}` : `目标 ≥ $168 · 差 $${(-d).toLocaleString()}`;
 }
