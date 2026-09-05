@@ -362,7 +362,7 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 <div id="page-model" class="page on">
 
 <div class="note full" style="border-left-color:var(--red);margin-bottom:14px">
-🔎 <b>数据出处声明（务必先读）</b>：<br>✅ <b>真实数据</b>：①「第6期夺奖目标」五项财务标准（股价≥$168、销售增长≥5%、毛利率≥35%、存货资产比4%~9%、资产负债率≤25%），来自官方目标图；②<b>第1-3期的全部己方决策</b>（价格/产量/市场推广/销售代表与时间分配/研发感抗·内阻·预算/生产地点/最高负债限额/股票回购/预测利润·收入），已从 techmarkchina.cn 你的账号原样录入，可切季度核对——其中<b>最高负债限额</b>你三期均<b>未设限</b>(默认999,999K)，<b>股票回购、预测利润、预测收入</b>三期均<b>留空</b>。材料里<b>只有决策输入、没有任何结果/损益产出</b>。第4-6期空白待明天。<br>🔁 <b>命名说明</b>：TechMark 同一局有两套官方皮肤，数值完全相同、只是叫法不同——本模型用「墨晶1/2/3 · 北美联盟/亚太共和/欧联邦」；若你在系统另一视图看到「雷墨磁1/2/3 · 尤菲亚/纳达卡/尼赫鲁」，按位置一一对应即可（北美=尤菲亚、亚太=纳达卡、欧联=尼赫鲁）。<br>⚠️ <b>仍是占位（未核实）</b>：驱动预测的<b>市场需求量、理想研发参数、成本阶梯、通胀/汇率/税率/折旧/库存费、期初现金/权益/固定资产、股价估算系数</b>等——这些是为让模型能算通而填的假设，<b>不代表官方口径</b>，故左侧损益/ROE/达标结果只是粗略推演。拿到真实成本表/需求表/规则页发我即替换。
+🔎 <b>数据出处声明（务必先读）</b>：<br>✅ <b>真实数据</b>：①「第6期夺奖目标」五项财务标准（股价≥$168、销售增长≥5%、毛利率≥35%、存货资产比4%~9%、资产负债率≤25%），来自官方目标图；②<b>第1-3期的全部己方决策</b>（价格/产量/市场推广/销售代表与时间分配/研发感抗·内阻·预算/生产地点/最高负债限额/股票回购/预测利润·收入），已从 techmarkchina.cn 你的账号原样录入，可切季度核对——其中<b>最高负债限额</b>你三期均<b>未设限</b>(默认999,999K)，<b>股票回购、预测利润、预测收入</b>三期均<b>留空</b>。③<b>赛区竞争情报</b>：我们在<b>火组</b>(同组5队 火1~火5，我们=火5)，已录入<b>期间1 各队研发费用</b>真实报表(火1~火4 = $2.0/3.7/1.6/3.6M，我们火5=$3.8M，与己方决策$1.4+1.2+1.2M吻合)，见「赛区情报」板。<br>目前<b>仍缺</b>：己方各期结果/损益产出、单位成本表、需求量表——拿到即可把预测引擎从占位校到真实口径。第4-6期空白待明天。<br>🔁 <b>命名说明</b>：TechMark 同一局有两套官方皮肤，数值完全相同、只是叫法不同——本模型用「墨晶1/2/3 · 北美联盟/亚太共和/欧联邦」；若你在系统另一视图看到「雷墨磁1/2/3 · 尤菲亚/纳达卡/尼赫鲁」，按位置一一对应即可（北美=尤菲亚、亚太=纳达卡、欧联=尼赫鲁）。<br>⚠️ <b>仍是占位（未核实）</b>：驱动预测的<b>市场需求量、理想研发参数、成本阶梯、通胀/汇率/税率/折旧/库存费、期初现金/权益/固定资产、股价估算系数</b>等——这些是为让模型能算通而填的假设，<b>不代表官方口径</b>，故左侧损益/ROE/达标结果只是粗略推演。拿到真实成本表/需求表/规则页发我即替换。
 </div>
 
 <div class="toolbar">
@@ -406,8 +406,14 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
   <div class="hint" id="stratHint" style="margin-top:10px"></div>
 </div>
 
+<div class="card full" id="intelCard">
+  <h2>🛰️ 赛区情报 · 火组（5 组竞争） <span class="badge">真实报表·逐期录入</span></h2>
+  <div class="tablewrap"><table id="intelTab"></table></div>
+  <div class="hint" id="intelHint" style="margin-top:10px"></div>
+</div>
+
 <div class="card full" id="competCard">
-  <h2>⚔️ 竞争对手 <span class="badge" id="competBadge">可选·默认关闭</span></h2>
+  <h2>⚔️ 竞争对手（推演·单一等效对手） <span class="badge" id="competBadge">可选·默认关闭</span></h2>
   <div id="competCtrls"></div>
 </div>
 
@@ -534,6 +540,18 @@ function priceSlope(){ return STRATEGY==='diff'?0.55 : STRATEGY==='cost'?1.05 : 
 // 你每期把对手决策照片给我, 我按期填入 COMPET.byQ[q]; 目标随双方当期决策变化, 全部持久化
 // 结构体在 PARAM_INIT 定义之后初始化(见下), 避免 TDZ
 let COMPET={on:false, byQ:[]};
+
+// ===== 赛区竞争情报(真实报表, 逐期录入) =====
+// 我们所在赛区="火"组, 同组共5队(火1~火5), 我们=火5(索引4)。
+// 数据来源: 游戏各期公开报表照片。列=火1..火5, 值=各队该期真实数字。
+// 各指标为对象{期号:[火1,火2,火3,火4,火5]}, 拿到新报表往对应指标里加期即可。
+const RIVAL_INTEL={
+ us:4, group:'火', teams:['火1','火2','火3','火4','火5(我们)'],
+ metrics:[
+  {key:'rd', name:'研发费用', unit:'$M', hi:'high',  // hi=high: 值越高越显眼(投入激进)
+   data:{ 1:[2.0,3.7,1.6,3.6,3.8] }}                 // 期间1: 我们(火5)3.8 = 墨晶1.4+1.2+1.2, 与已录决策吻合
+ ]
+};
 
 // ===== 决策状态: 每季独立 =====
 function blankQ(){
@@ -1305,7 +1323,40 @@ function renderCompet(){
     ${slRow('CS',(rq.rivalStock||0),0,600,1)}</div>
   <div class="hint" style="margin-top:8px">对手数据你拍照给我、我按期填这里。相对份额 = 你的吸引力 /(你的吸引力 + 对手吸引力), 用同一套匹配/广告/销代/价格弹性公式。夺奖看"五项达标且股价最高", 填对手股价即可在上方夺奖卡看能否夺魁。</div>`;
 }
-function renderAll(){renderRevTargets();renderStrat();renderCompet();renderCalib();renderCtrls();renderResults();
+// ===== 赛区情报表渲染(真实竞对报表) =====
+function renderIntel(){
+ const el=document.getElementById('intelTab'); if(!el) return;
+ const T=RIVAL_INTEL.teams, us=RIVAL_INTEL.us;
+ const th=(t,i)=>`<th${i===us?' style="color:var(--accent)"':''}>${t}</th>`;
+ let h='<thead><tr><th>指标 / 期间</th>'+T.map(th).join('')+'</tr></thead><tbody>';
+ for(const m of RIVAL_INTEL.metrics){
+  const periods=Object.keys(m.data).map(Number).sort((a,b)=>a-b);
+  for(const p of periods){
+   const row=m.data[p];
+   const mx=Math.max(...row), mn=Math.min(...row);
+   h+=`<tr><td>${m.name}·期${p}<span style="color:var(--faint)">(${m.unit})</span></td>`;
+   h+=row.map((v,i)=>{
+    const usSty=i===us?'color:var(--accent);font-weight:800':'';
+    const hot=(m.hi==='high'&&v===mx)||(m.hi==='low'&&v===mn);
+    const bg=hot&&i!==us?';background:rgba(246,173,85,.12)':'';
+    return `<td style="${usSty}${bg}">${m.unit==='$M'?'$'+v.toFixed(1)+'M':v}</td>`;
+   }).join('');
+   h+='</tr>';
+  }
+ }
+ h+='</tbody>';
+ el.innerHTML=h;
+ // 情报小结: 竞对研发投入排名 + 与我们对比
+ const hint=document.getElementById('intelHint'); if(!hint) return;
+ const rd1=(RIVAL_INTEL.metrics.find(m=>m.key==='rd')||{}).data;
+ let s='我们所在<b>火组</b>共 5 队(火1~火5)，<b>火5=我们</b>；此表逐期录入各队真实报表数字，橙底=该期该指标最激进的对手。';
+ if(rd1&&rd1[1]){
+  const r=rd1[1], ours=r[us], avgOther=(r.reduce((a,b,i)=>i===us?a:a+b,0)/(r.length-1));
+  s+=`<br>📊 期间1研发：我们 <b>$${ours.toFixed(1)}M</b>，4 家竞对均值 <b>$${avgOther.toFixed(2)}M</b>——我们${ours>=avgOther?'高于':'低于'}对手均值 $${Math.abs(ours-avgOther).toFixed(2)}M（我们研发投入偏${ours>=avgOther?'激进':'保守'}）。`;
+ }
+ hint.innerHTML=s;
+}
+function renderAll(){renderRevTargets();renderStrat();renderIntel();renderCompet();renderCalib();renderCtrls();renderResults();
  document.querySelectorAll('.qtab').forEach((t,i)=>t.classList.toggle('on',i===cur));}
 
 function applyPreset(t){
