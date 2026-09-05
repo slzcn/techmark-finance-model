@@ -409,8 +409,13 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
   </div>
 
   <div class="card">
-    <h2>🏭 三·生产 & 📣 四·销售决策<span class="badge">当前产品·当前季</span></h2>
-    <div class="natgrid" id="natCtrls"></div>
+    <h2>🏭 三·生产决策 <span class="badge">产量·产地·当前产品</span></h2>
+    <div class="natgrid" id="prodSiteCtrls"></div>
+  </div>
+
+  <div class="card">
+    <h2>📣 四·销售决策 <span class="badge">定价·销代·广告·当前产品</span></h2>
+    <div class="natgrid" id="salesCtrls"></div>
     <div class="note" id="prodNote"></div>
   </div>
 
@@ -780,16 +785,22 @@ function renderCtrls(){
   <div class="ctrl"><label>研发预算($M) ${okFlag}<span>$${(p.rd||0).toFixed(2)}M</span></label>
    ${slRow('RD',(p.rd||0),0,6,0.05)}
    ${fundBtn}</div>`;
- let h='';
+ // 生产模块: 产量 + 产地
+ let hp='';
  for(let ni=0;ni<3;ni++){const x=p.nat[ni];
-  h+=`<div class="natbox"><h3>${NATNAME[ni]}</h3>
-   <div class="dimtag prod">🏭 生产</div>
+  hp+=`<div class="natbox"><h3>${NATNAME[ni]}</h3>
    <div class="ctrl"><label>产量(件) <span>${(x.qty/1000).toFixed(0)}K</span></label>
     ${slRow('N:'+ni+':qty',x.qty,0,999000,1000)}</div>
    <div class="ctrl"><label style="font-size:11px">产地(省关税)</label>
     <div class="seg">${[0,1,2].map(s=>`<button class="${x.site===s?'on':''}" onclick="setN(${ni},'site',${s})">${NATNAME[s]}</button>`).join('')}</div>
     <div class="hint">非尤菲亚首次:+$1M安装+$100K开办</div></div>
-   <div class="dimtag sales">📣 销售</div>
+  </div>`;
+ }
+ document.getElementById('prodSiteCtrls').innerHTML=hp;
+ // 销售模块: 定价 + 销代 + 广告
+ let hs='';
+ for(let ni=0;ni<3;ni++){const x=p.nat[ni];
+  hs+=`<div class="natbox"><h3>${NATNAME[ni]}</h3>
    <div class="ctrl"><label>定价($EU) <span>$${x.price}</span></label>
     ${slRow('N:'+ni+':price',x.price,10,90,1)}</div>
    <div class="ctrl"><label>销售代表 <span>${x.reps}</span></label>
@@ -798,7 +809,7 @@ function renderCtrls(){
     ${slRow('N:'+ni+':ad',x.ad,0,999,5)}</div>`:'<div class="hint">磁3不打广告</div>'}
   </div>`;
  }
- document.getElementById('natCtrls').innerHTML=h;
+ document.getElementById('salesCtrls').innerHTML=hs;
  const notes={m1:'磁1高端品牌型·需求萎缩·广告主战场·销售时间70%',
   m2:'磁2成长明星·需求强增(尼最猛)·参数尤纳超稳·毛利率62%最高→核心利润引擎·销售时间20%',
   m3:'磁3通用标准品·仅尤菲亚需求大·靠规模压成本·不打广告·销售时间10%'};
