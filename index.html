@@ -425,7 +425,7 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 </div>
 
 <div class="card full" id="valCard">
-  <h2>🎯 校准验证 · 模型 vs 官方真实（期1/期2）
+  <h2>🎯 校准验证 · 模型 vs 官方真实（期1/期2/期3）
     <button class="primary" style="float:right;font-size:13px;padding:4px 10px" onclick="autoCalib()">↺ 复位为真值口径(不拟合)</button></h2>
   <div class="tablewrap"><table id="valTab"></table></div>
   <div class="hint" id="valHint" style="margin-top:10px"></div>
@@ -588,6 +588,8 @@ const DEBT_Q=[18307199,34200740,25814292];  // 各期期末总负债真值(期1=
 const INTEREST_Q=[0,1144200,2137546];       // 各期利息费用真值(期1=0 期2=1,144,200 期3=2,137,546)
 const STOCK_Q=[100,126,156];       // 各期官方股价(游戏公布值, 火5=第5组): 期1=100 期2=126 期3=156(期3市场报表真值)
 const PROMO_Q=[1150000,1500000,2000000];    // 各期促销费真值(损益表: 期1=1.15M 期2=1.5M 期3=2.0M); 期4+缺失→回退广告决策Σ×1000
+// ✅ 应收账款回收期(天)[尤,纳,尼]=期3报表真值[17,61,24](应收=各地区季收入×回收期÷90, 已验证与报表分厘吻合)。各期沿用(期1/2报表未采集回收期)。
+const COLL_DAYS=[17,61,24];
 // ===== 成本/份额: 已核实真值, 不再缩放 =====
 let COST_SCALE=1;        // ✅ 成本表=PDF页28-30真值, 不缩放
 let SALES_CAL=1;         // (保留兼容; 份额已改为每段观测输入销售份额, 此系数不再参与销量)
@@ -766,6 +768,7 @@ function calcQ(q, carryFixed, carryEquity, prevReps, carryCash, extraMove, prevR
  let rev=0,cogsSold=0,invVal=0,promo=0,rd=0,repCost=0,trainCost=0,fireCost=0,moveCost=extraMove||0,installCapex=0;
  const detail=[];
  let repsByNat=[0,0,0];
+ let revByNat=[0,0,0];   // 各地区销售收入(算应收账款用)
  let quotaWarn=[];
  for(let pi=0;pi<3;pi++){
   const pk=PKEY[pi],p=Q[q].prod[pk];
@@ -797,6 +800,7 @@ function calcQ(q, carryFixed, carryEquity, prevReps, carryCash, extraMove, prevR
    if(target>availU && producedU>=999000){ quotaWarn.push(PNAME[pi]+'·'+NATNAME[ni]+'产量触顶999K,丢'+((target-availU)/1000).toFixed(0)+'K订单给对手'); }
    const endU=availU-sold, endV=endU*wavg;
    rev+=sold*x.price;
+   revByNat[ni]+=sold*x.price;                   // 各地区收入(算应收账款)
    cogsSold+=sold*wavg;                          // 销售成本=销量×加权平均成本
    invVal+=endV;                                 // 期末存货价值(结转)
    if(inv&&inv[pk]) inv[pk][ni]={u:endU,v:endV};  // 结转下期
@@ -849,8 +853,10 @@ function calcQ(q, carryFixed, carryEquity, prevReps, carryCash, extraMove, prevR
  // 期末现金(结转下季): 仅本季短期借款进现金流, START_DEBT本金不进(期初已转为资产)
  const cashRaw=cashPre+stBorrow-interest+invIncome-tax-Math.max(0,shortInv);
  const cashEnd=Math.max(5000000,Math.min(10000000,cashRaw+Math.max(0,shortInv)));
+ // ✅ 应收账款=各地区季收入×回收期÷90(报表口径)
+ const recv=revByNat.reduce((a,v,ni)=>a+v*(COLL_DAYS[ni]||0)/90,0);
  return {rev,cogsSold,invVal,invFee,promo,rd,repCost,trainCost,fireCost,mgmt,dep,moveCost,
-   ebit,debt,interest,shortInv,invIncome,pretax,tax,net,totalReps,repsByNat,detail,fixed,
+   ebit,debt,interest,shortInv,invIncome,pretax,tax,net,totalReps,repsByNat,revByNat,recv,detail,fixed,
    cashEnd:Math.max(0,cashEnd),quotaWarn};
 }
 
@@ -887,15 +893,20 @@ function calcCumulative(endQ){
   perQ.push(r);
  }
  const r=perQ[Math.min(cur,last)];
- // 总资产 = 固定资产净值(含累计折旧) + 现金 + 短投 + 存货
+ // 总资产 = 固定资产净值(含累计折旧) + 现金 + 应收账款 + 短投 + 存货
  let accDep=perQ.reduce((a,b)=>a+b.dep,0);
  const fixedNet=Math.max(0,fixed-accDep);
- const totalAsset=fixedNet + r.cashEnd + Math.max(0,r.shortInv) + r.invVal;
+ // ✅ 应收账款: 之前这笔"已赚未收"的钱被简化现金流当成现金停在了短投里(致短投虚高、无应收行)。
+ //    按报表口径拆出: 停在短投的钱优先归为应收, 剩余才算真短投; 总资产口径不变, 只是科目归位。
+ const recv=r.recv||0;
+ const shortRaw=Math.max(0,r.shortInv);
+ const shortInv=Math.max(0,shortRaw-recv);      // 扣除应收后的真短期投资
+ const totalAsset=fixedNet + r.cashEnd + recv + shortInv + r.invVal;
  const eq=equity;
  const roa=r.net/totalAsset, roe=r.net/eq;
  const netMargin=r.rev>0?r.net/r.rev:0, assetTurn=r.rev/totalAsset, lever=totalAsset/eq;
  const cumNet=perQ.reduce((a,b)=>a+b.net,0);
- return {r,perQ,equity:eq,totalAsset,roa,roe,netMargin,assetTurn,lever,cumNet,fixed:fixedNet,cash:r.cashEnd};
+ return {r,perQ,equity:eq,totalAsset,roa,roe,netMargin,assetTurn,lever,cumNet,fixed:fixedNet,cash:r.cashEnd,recv,shortInv};
 }
 
 // ===== 五个夺奖目标值的统一计算(正向: 决策→目标) =====
@@ -1098,18 +1109,18 @@ function renderResults(){
   <tr class="sub"><td>− 管理费</td><td>${fmt(r.mgmt)}</td><td></td></tr>
   <tr class="sub"><td>− 折旧(固定资产$${(r.fixed/1e6).toFixed(1)}M/40)</td><td>${fmt(r.dep)}</td><td></td></tr>
   <tr><td>= 息税前利润 EBIT</td><td class="${r.ebit>=0?'pos':'neg'}">${fmt(r.ebit)}</td><td>${pct(r.ebit/(r.rev||1))}</td></tr>
-  <tr class="sub"><td>− 债务利息(债$${(r.debt/1e6).toFixed(1)}M×6.25%)</td><td>${fmt(r.interest)}</td><td></td></tr>
-  <tr class="sub"><td>+ 短投收益(投$${(r.shortInv/1e6).toFixed(1)}M×2%)</td><td class="pos">${fmt(r.invIncome)}</td><td></td></tr>
+  <tr class="sub"><td>− 债务利息(负债$${(r.debt/1e6).toFixed(1)}M)</td><td>${fmt(r.interest)}</td><td></td></tr>
   <tr class="sub"><td>− 所得税(38%)</td><td>${fmt(r.tax)}</td><td></td></tr>
   <tr class="total"><td>净利润</td><td class="${r.net>=0?'pos':'neg'}">${fmt(r.net)}</td><td>${pct(C.netMargin)}</td></tr>
   </tbody>`;
  document.getElementById('bs').innerHTML=`
-  <thead><tr><th>科目</th><th>期末</th><th>杜邦拆解</th><th>值</th></tr></thead><tbody>
-  <tr><td>总资产(固定净值+现金+短投+存货)</td><td>${fmt(C.totalAsset)}</td><td>净利率</td><td>${pct(C.netMargin)}</td></tr>
-  <tr><td>期末现金(结转下季,$5M-$10M)</td><td>${fmt(C.cash)}</td><td>资产周转</td><td>${C.assetTurn.toFixed(3)}</td></tr>
-  <tr><td>股东权益(含累计留存)</td><td>${fmt(C.equity)}</td><td>权益乘数</td><td>${C.lever.toFixed(3)}</td></tr>
-  <tr><td>债务(本季)</td><td>${fmt(r.debt)}</td><td>固定资产净值</td><td>${fmt(C.fixed)}</td></tr>
-  <tr><td>存货价值</td><td>${fmt(r.invVal)}</td><td>短投</td><td>${fmt(Math.max(0,r.shortInv))}</td></tr>
+  <thead><tr><th>资产构成</th><th>期末</th><th>杜邦拆解</th><th>值</th></tr></thead><tbody>
+  <tr><td>总资产</td><td>${fmt(C.totalAsset)}</td><td>净利率</td><td>${pct(C.netMargin)}</td></tr>
+  <tr class="sub"><td>· 期末现金($5M-$10M)</td><td>${fmt(C.cash)}</td><td>资产周转</td><td>${C.assetTurn.toFixed(3)}</td></tr>
+  <tr class="sub"><td>· 应收账款(各地区收入×回收期/90)</td><td>${fmt(C.recv)}</td><td>权益乘数</td><td>${C.lever.toFixed(3)}</td></tr>
+  <tr class="sub"><td>· 存货价值</td><td>${fmt(r.invVal)}</td><td>固定资产净值</td><td>${fmt(C.fixed)}</td></tr>
+  <tr class="sub"><td>· 短期投资(现金超$10M部分,扣应收)</td><td>${fmt(C.shortInv)}</td><td>股东权益(含累计留存)</td><td>${fmt(C.equity)}</td></tr>
+  <tr><td>债务(本季)</td><td>${fmt(r.debt)}</td><td>资产负债率</td><td>${pct(C.totalAsset>0?r.debt/C.totalAsset:0)}</td></tr>
   <tr class="total"><td>ROE</td><td class="${C.roe>=0?'pos':'neg'}">${pct(C.roe)}</td>
    <td>=净利率×周转×乘数</td><td class="${C.roe>=0?'pos':'neg'}">${pct(C.netMargin*C.assetTurn*C.lever)}</td></tr>
   </tbody>`;
@@ -1326,20 +1337,23 @@ function renderValidation(){
  const el=document.getElementById('valTab'); if(!el) return;
  const P=calcCumulative(5).perQ;
  const err=(m,r)=>{ if(r===0) return m===0?0:1; return (m-r)/Math.abs(r); };
- const ecell=e=>{ const a=Math.abs(e); const c=a<=0.10?'#68d391':a<=0.25?'#f6ad55':'#fc8181';
+ // near0: 两个值绝对量都极小(如期1净利≈0)时, 百分比会被微小分母放大成假红, 改判绝对差
+ const ecell=(e,near0)=>{ if(near0) return `<td style="color:#68d391">≈0(吻合)</td>`;
+   const a=Math.abs(e); const c=a<=0.10?'#68d391':a<=0.25?'#f6ad55':'#fc8181';
    return `<td style="color:${c}">${e>=0?'+':''}${(e*100).toFixed(0)}%</td>`; };
  let h='<thead><tr><th>指标 / 期</th><th>模型推算</th><th>官方真实</th><th>误差</th></tr></thead><tbody>';
- for(const q of [1,2]){ const R=REAL_RESULTS[q], m=P[q-1];
+ for(const q of [1,2,3]){ const R=REAL_RESULTS[q]; if(!R) continue; const m=P[q-1];
   const mRev=m.rev/1e6, mGm=_simGm(P,q-1), mNet=m.net/1e6;
   h+=`<tr><td>销售额·期${q}</td><td>$${mRev.toFixed(1)}M</td><td>$${R.rev}M</td>${ecell(err(mRev,R.rev))}</tr>`;
   h+=`<tr><td>毛利率·期${q}</td><td>${(mGm*100).toFixed(0)}%</td><td>${(R.gm*100).toFixed(0)}%</td>${ecell(err(mGm,R.gm))}</tr>`;
-  h+=`<tr><td>当期利润·期${q}</td><td>$${mNet.toFixed(1)}M</td><td>$${R.net.toFixed(1)}M</td>${ecell(err(mNet,R.net))}</tr>`;
+  const netNear0=Math.abs(R.net)<0.2&&Math.abs(mNet-R.net)<0.2; // 双方均≈0且差<$0.2M
+  h+=`<tr><td>当期利润·期${q}</td><td>$${mNet.toFixed(1)}M</td><td>$${R.net.toFixed(1)}M</td>${ecell(err(mNet,R.net),netNear0)}</tr>`;
  }
  h+='</tbody>'; el.innerHTML=h;
  const hint=document.getElementById('valHint'); if(!hint) return;
- hint.innerHTML='🎯 <b>用途</b>：把"我们真实的期1/2决策"喂进模型, 看推算值离官方真实结果多远。绿≤10%、橙≤25%、红>25%。'
-  +'<br>✅ <b>全部输入均为官方报表真值, 无拟合系数</b>(成本缩放=1、不使用捕获系数)：需求=行业订单真值、理想=逐期真值、份额=各段观测销售份额、通胀/利息/负债/股价/促销=报表真值。'
-  +'<br><span style="color:var(--faint)">注: 期1毛利率 36.3%/真37.2%、净利≈0/真≈0, 基本吻合(差$46K); 期2毛利率 51.1%/真51.4%。<b>残差来源</b>: ①份额仅报表1位小数精度→收入偏高2~3%; ②期2存货计价口径差异, 及一笔$1M建厂在报表无出处(折旧差$25K), 均未凑数硬改。</span>';
+ hint.innerHTML='🎯 <b>用途</b>：把"我们真实的期1/2/3决策"喂进模型, 看推算值离官方真实结果多远。绿≤10%、橙≤25%、红>25%。'
+  +'<br>✅ <b>全部输入均为官方报表真值, 无拟合系数</b>(成本缩放=1、不使用捕获系数)：需求=行业订单真值、理想=逐期真值、份额/销量=各段观测真值、通胀/利息/负债/股价/促销/回收期=报表真值。'
+  +'<br><span style="color:var(--faint)">注: 期3已用完整报表(经营结果+全景市场)复现, 净利误差+0.02%、毛利率54.0%/真53.9%、负债与利息分厘不差。<b>残差来源</b>: ①期1/2份额仅报表1位小数精度→收入偏高2~3%; ②期3收入-0.9%源于雷2尼赫鲁期初存货短缺(期2四舍五入滚入存货), 均未凑数硬改。</span>';
 }
 // ===== 后几期预测(期3-6): 用当前决策推演, 并核对第6期五目标 =====
 function renderForecast(){
