@@ -518,16 +518,19 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 // 段映射: m1=产品[雷1] 三地区[尤,纳,尼]; m2=[雷2]; m3=[雷3]。
 const DEMAND_P1={ m1:[1764000,1154519,813780], m2:[1108013,228758,550194], m3:[2004240,118800,70754] }; // 期1报表真值[尤,纳,尼]
 const DEMAND_P2={ m1:[1277462,1104233,1304660],m2:[1104691,123025,830661], m3:[1551272,99857,74779]  }; // 期2报表真值[尤,纳,尼]
-function _dem6(p1,p2){ // 期1/2真值 + 期3-6线性外推
- const out=[p1.slice(),p2.slice()];
- for(let q=2;q<6;q++){ out.push([0,1,2].map(ni=>Math.max(0,Math.round(p2[ni]+(p2[ni]-p1[ni])*(q-1))))); }
+// ✅ 期3 = 官方期3报表反推(行业订单 = 我方订货量 ÷ 我方预订份额)。纳达卡雷1因份额仅0.3%反推噪声大, 仅供参考。
+const DEMAND_P3={ m1:[1320150,1409333,673791], m2:[1750071,111198,2225975], m3:[2849397,40576,53396] }; // 期3反推[尤,纳,尼]
+function _dem6(p1,p2,p3){ // 期1/2/3真值(期3为报表反推) + 期4-6线性外推
+ const out=[p1.slice(),p2.slice(),p3.slice()];
+ for(let q=3;q<6;q++){ out.push([0,1,2].map(ni=>Math.max(0,Math.round(p3[ni]+(p3[ni]-p2[ni])*(q-2))))); }
  return out; // 6期
 }
-const DEMAND={ m1:_dem6(DEMAND_P1.m1,DEMAND_P2.m1), m2:_dem6(DEMAND_P1.m2,DEMAND_P2.m2), m3:_dem6(DEMAND_P1.m3,DEMAND_P2.m3) };
+const DEMAND={ m1:_dem6(DEMAND_P1.m1,DEMAND_P2.m1,DEMAND_P3.m1), m2:_dem6(DEMAND_P1.m2,DEMAND_P2.m2,DEMAND_P3.m2), m3:_dem6(DEMAND_P1.m3,DEMAND_P2.m3,DEMAND_P3.m3) };
 // ✅ 真实结果(火5=我们, 官方"经营结果"): 用于校准验证与达标对照。net/rev 单位=$百万
 const REAL_RESULTS={ // 官方经营结果精确真值(rev/net 单位=$百万)
  1:{rev:32.742, gm:0.372, net:-0.003, share:0.14, debt:0.38, inv:0.16, roe:0.0,   stock:100, growth:null},
- 2:{rev:51.795, gm:0.514, net:8.919,  share:0.21, debt:0.47, inv:0.41, roe:0.129, stock:126, growth:0.581}
+ 2:{rev:51.795, gm:0.514, net:8.919,  share:0.21, debt:0.47, inv:0.41, roe:0.129, stock:126, growth:0.581},
+ 3:{rev:63.285, gm:0.539, net:10.681, share:0.28, debt:0.34, inv:0.34, roe:0.215, stock:null,growth:0.222} // 期3报表真值(股价该报表未给, 待期3市场报表)
 };
 // ✅ 每产品 6期 × 三地区[尤,纳,尼] 市场理想点[扭矩,电阻]。
 // 期1/期2 = 官方"火星赛区市场报表·市场理想值"逐段精确真值(见期1/期2全景报表照片)。
@@ -576,10 +579,10 @@ const SALESTIME={m1:0.70,m2:0.20,m3:0.10}; // 【占位】仅作缺省;真实按
 const INIT_REPS=[12,7,10]; // 各地区初始销售代表 尤菲亚/纳达卡/尼赫鲁(占位)
 let START_CASH=5000000, START_EQUITY=30000000, START_FIXED=25000000; // ✅期初(期0)真值: 现金5M/权益30M(股本0.5M+已缴29.5M)/固定资产原值25M(折旧625K=25M/40反推)。来源官方期1资产负债表。
 // ✅ 逐期负债/利息/股价为观测量(官方资产负债表·损益表真值), 不再虚构长期借款计息。期3+缺失时按上期沿用。
-const DEBT_Q=[18307199,34200740];  // 各期期末总负债真值(期1=18,307,199 期2=34,200,740)
-const INTEREST_Q=[0,1144200];      // 各期利息费用真值(期1=0无息经营负债, 期2=1,144,200)
-const STOCK_Q=[100,126];           // 各期官方股价(游戏公布值, 非本模型推算)
-const PROMO_Q=[1150000,1500000];   // 各期促销费真值(官方损益表: 期1=1,150,000 期2=1,500,000); 期3+缺失→回退广告决策Σ×1000
+const DEBT_Q=[18307199,34200740,25814292];  // 各期期末总负债真值(期1=18,307,199 期2=34,200,740 期3=25,814,292)
+const INTEREST_Q=[0,1144200,2137546];       // 各期利息费用真值(期1=0 期2=1,144,200 期3=2,137,546)
+const STOCK_Q=[100,126];           // 各期官方股价(游戏公布值); 期3报表未给股价(在期3市场报表), 暂缺→估算
+const PROMO_Q=[1150000,1500000,2000000];    // 各期促销费真值(损益表: 期1=1.15M 期2=1.5M 期3=2.0M); 期4+缺失→回退广告决策Σ×1000
 // ===== 成本/份额: 已核实真值, 不再缩放 =====
 let COST_SCALE=1;        // ✅ 成本表=PDF页28-30真值, 不缩放
 let SALES_CAL=1;         // (保留兼容; 份额已改为每段观测输入销售份额, 此系数不再参与销量)
@@ -649,7 +652,7 @@ function blankQ(){
  };
 }
 // share: 该段销售份额(观测真值或预计份额, 0~1); null=未填→回退吸引力估算。site:产地 0尤1纳2尼
-function nd(price,qty){return {price:price,qty:qty===undefined?0:qty,reps:0,ad:0,site:0,share:null};}
+function nd(price,qty){return {price:price,qty:qty===undefined?0:qty,reps:0,ad:0,site:0,share:null,sold:null};}
 let Q=[blankQ(),blankQ(),blankQ(),blankQ(),blankQ(),blankQ()];
 let cur=0, curP=1; // 默认第1期(六期制,逐期推进)
 let stockPrice=null; // 夺奖目标: 游戏内实际股价, 用户手填(游戏另有定价公式, 本模型不推算)
@@ -748,11 +751,11 @@ function rivalAttract(pk,ni,q){
 }
 
 // ===== 销代限额(P15 审计师上限, 不可突破) =====
-// ✅ 各期尤菲亚/纳达卡/尼赫鲁销代上限[尤,纳,尼]。期2/期3=官方报表"下季度销代限额"真值(期1报表给期2=[13,7,11]; 期2报表给期3=[14,7,12]); 期1=初始[12,7,10]; 期4-6外推。
-const REP_CAP=[[12,7,10],[13,7,11],[14,7,12],[15,7,13],[16,7,14],[17,7,15]];
+// ✅ 各期尤菲亚/纳达卡/尼赫鲁销代上限[尤,纳,尼]。真值来自各期报表"下季度销代限额": 期1=初始[12,7,10]; 期2=[13,7,11]; 期3=[14,7,12]; 期4=[14,2,14](期3报表给出, 纳达卡骤降至2); 期5-6按期4外推。
+const REP_CAP=[[12,7,10],[13,7,11],[14,7,12],[14,2,14],[15,2,15],[16,2,16]];
 
 // ===== 核心计算: 算第 q 季 (carryCash=上季期末现金, extraMove=本季首次换厂开办费, prevRepsByNat=上季各国销代) =====
-function calcQ(q, carryFixed, carryEquity, prevReps, carryCash, extraMove, prevRepsByNat, depBase){
+function calcQ(q, carryFixed, carryEquity, prevReps, carryCash, extraMove, prevRepsByNat, depBase, inv){
  // 先结算研发(累积)
  for(const pk of PKEY) resolveParam(pk);
  let rev=0,cogsSold=0,invVal=0,promo=0,rd=0,repCost=0,trainCost=0,fireCost=0,moveCost=extraMove||0,installCapex=0;
@@ -767,26 +770,33 @@ function calcQ(q, carryFixed, carryEquity, prevReps, carryCash, extraMove, prevR
   for(let ni=0;ni<3;ni++){
    const x=p.nat[ni];
    repsByNat[ni]+=(x.reps||0);   // ✅销代按区域全量计(该段是否生产不影响薪资, 修复期1被腰斩+误扣裁员)
-   if(x.qty<=0) continue;
-   prodTotal+=x.qty;
+   // ✅ 存货结转: 期初存货(件+值, 上期结转) + 当期产量 = 可供货; 卖不完的结转下期(移动加权平均计价)
+   const st=(inv&&inv[pk]&&inv[pk][ni])?inv[pk][ni]:{u:0,v:0};
+   const producedU=Math.max(0,x.qty||0);
+   if(producedU>0) prodTotal+=producedU;
+   const uc=unitCostBase(pk,x.site,ni,volTotal)*(1+(INFLAT_Q[q]?INFLAT_Q[q][ni]:0)); // 本期单位生产成本(送达该地)
+   const availU=st.u+producedU;                 // 可供货量
+   const availV=st.v+producedU*uc;              // 可供货成本
+   if(availU<=0){ if(inv&&inv[pk]) inv[pk][ni]={u:0,v:0}; continue; } // 无货可卖也无生产→跳过
+   const wavg=availV/availU;                    // 移动加权平均单位成本
+   // ✅ 销量口径优先级: 观测真值(市场销量)>销售份额×行业订单>吸引力估算; 均以"可供货量"封顶(可卖期初存货, 修复期3雷1零产量仍出货)
    const ms=matchScore(pk,ni,q),af=adFactor(x.ad,pk),rf=repFactor(x.reps,pk),pf=priceFactor(x.price,pk);
-   const cap=DEMAND[pk][q][ni]; // 行业订单(报表真值)
-   const attract=ms*af*rf*pf;
-   // ✅ 销量口径: 该段填了销售份额(观测真值/预计份额)→ 销量=行业订单×份额(产量封顶); 未填→回退吸引力估算(仅估算)
-   let share;
-   if(x.share!=null){ share=x.share; }
-   else if(COMPET.on){ const ra=rivalAttract(pk,ni,q); share=(attract+ra)>0?attract/(attract+ra):0; }
-   else share=Math.min(0.55, attract*0.30);
-   const potential=Math.round(cap*share);
-   const sold=Math.min(x.qty,potential);
-   // 丢单检测(P14): 潜在销量>产量 且 产量已抵单市场配额999K → 超出订单落到竞争对手
-   if(potential>x.qty && x.qty>=999000){ quotaWarn.push(PNAME[pi]+'·'+NATNAME[ni]+'产量触顶999K,丢'+((potential-x.qty)/1000).toFixed(0)+'K订单给对手'); }
-   const uc=unitCostBase(pk,x.site,ni,volTotal)*(1+(INFLAT_Q[q]?INFLAT_Q[q][ni]:0));
+   const cap=DEMAND[pk][q][ni]; // 行业订单
+   let target;
+   if(x.sold!=null){ target=x.sold; }               // 官方报表市场销量真值
+   else if(x.share!=null){ target=Math.round(cap*x.share); }
+   else if(COMPET.on){ const attract=ms*af*rf*pf, ra=rivalAttract(pk,ni,q); target=Math.round(cap*((attract+ra)>0?attract/(attract+ra):0)); }
+   else { const attract=ms*af*rf*pf; target=Math.round(cap*Math.min(0.55, attract*0.30)); }
+   const sold=Math.min(availU,target);
+   // 丢单检测: 需求潜量>可供货 且 本期产量触顶999K → 超出订单落到竞争对手
+   if(target>availU && producedU>=999000){ quotaWarn.push(PNAME[pi]+'·'+NATNAME[ni]+'产量触顶999K,丢'+((target-availU)/1000).toFixed(0)+'K订单给对手'); }
+   const endU=availU-sold, endV=endU*wavg;
    rev+=sold*x.price;
-   cogsSold+=sold*uc;
-   invVal+=(x.qty-sold)*uc;
+   cogsSold+=sold*wavg;                          // 销售成本=销量×加权平均成本
+   invVal+=endV;                                 // 期末存货价值(结转)
+   if(inv&&inv[pk]) inv[pk][ni]={u:endU,v:endV};  // 结转下期
    promo+=x.ad*1000;
-   detail.push({pk:PNAME[pi],nat:NATNAME[ni],ms,sold,potential,qty:x.qty,uc,share,
+   detail.push({pk:PNAME[pi],nat:NATNAME[ni],ms,sold,potential:target,qty:producedU,uc:wavg,share:x.share,
      rev:sold*x.price, site:NATNAME[x.site], ok:p._ok});
   }
   // 产量配额: 单产品单季总量≤2,997,000
@@ -822,7 +832,9 @@ function calcQ(q, carryFixed, carryEquity, prevReps, carryCash, extraMove, prevR
  // 本季短期借款(现金流): 现金<$5M 自动借足到 $5M
  if(cashPre<5000000){ stBorrow=5000000-cashPre; }
  let cashAfterDebt=cashPre+stBorrow;
- if(cashAfterDebt>10000000){ shortInv=cashAfterDebt-10000000; invIncome=shortInv*0.02; } // 季8%/4=2%
+ if(cashAfterDebt>10000000){ shortInv=cashAfterDebt-10000000; } // 现金超$10M的部分记为短期投资(仅供现金封顶展示)
+ // ✅ 利息收入=0: 官方期1/2/3损益表"利息收入"均为0(游戏不给闲置现金计息)。此前凭空按2%计息, 每期虚增净利~40万, 已按报表真值清零。
+ invIncome=0;
  // ✅ 负债/利息为观测真值(期1/期2官方报表); 期3+缺失→沿用最后已知负债并按季利率6.25%估息
  const debt=(DEBT_Q[q]!=null)?DEBT_Q[q]:((DEBT_Q[DEBT_Q.length-1]||0)+stBorrow);
  const interest=(INTEREST_Q[q]!=null)?INTEREST_Q[q]:debt*0.0625;
@@ -845,6 +857,8 @@ function calcCumulative(endQ){
  let prevBN=INIT_REPS.slice(); // 上季各国销代
  let installedNat={}; // 已安装过的(产品,产地)
  let siteHist={}; // 已经开过厂的(产品,产地), 用于判定首次换厂开办费
+ // ✅ 存货结转状态: inv[产品][地区]={u:件数, v:成本值}, 期0期初为空(与官方期1期初存货=0一致), 逐季滚动
+ const inv={ m1:[{u:0,v:0},{u:0,v:0},{u:0,v:0}], m2:[{u:0,v:0},{u:0,v:0},{u:0,v:0}], m3:[{u:0,v:0},{u:0,v:0},{u:0,v:0}] };
  const perQ=[];
  for(let q=0;q<=last;q++){
   // 本季新增安装费(首次向纳/尼下单每产品$1M) + 首次换厂开办费$100K
@@ -859,7 +873,7 @@ function calcCumulative(endQ){
   const openingFixed=fixed;   // ✅折旧基数=本期期初原值(本期新建下期起折旧)
   fixed+=newInstall;
   cash-=newInstall; // 安装费耗现金(转化为固定资产)
-  const r=calcQ(q, fixed, equity, prevReps, cash, newMove, prevBN, openingFixed);
+  const r=calcQ(q, fixed, equity, prevReps, cash, newMove, prevBN, openingFixed, inv);
   r.newInstall=newInstall;
   equity+=r.net; // 留存收益累积
   cash=r.cashEnd; // 现金结转下季
@@ -1157,6 +1171,8 @@ function loadRealDecisions(){
  }
  // 设置各段销售份额(观测真值 0~1): shares[产品][地区], 地区=[尤,纳,尼]
  function setSh(prod,shares){ ['m1','m2','m3'].forEach((pk,pi)=>{ for(let i=0;i<3;i++) prod[pk].nat[i].share=shares[pi][i]; }); }
+ // ✅ 设置各段市场销量(官方报表真值, 件): sold[产品][地区]。销量口径优先于份额, 且允许卖期初存货(零产量段也能出货)
+ function setSold(prod,sold){ ['m1','m2','m3'].forEach((pk,pi)=>{ for(let i=0;i<3;i++) prod[pk].nat[i].sold=sold[pi][i]; }); }
  const Q0=blankQ(), Q1=blankQ(), Q2=blankQ();
  // ---- 第1期(仅决策"价格+产量"; 研发沿用1A预备研发; 销代沿用初始12/7/10) ----
  Q0.prod.m1={tq:4.2,rs:2.4,rd:1.40,nat:mk([40,45,38],[350000,200000,400000],[0,0,0],0)};
@@ -1174,11 +1190,15 @@ function loadRealDecisions(){
  setSh(Q1.prod,[[0.073,0.018,0.263],[0.241,0.329,0.328],[0.251,0.054,0.263]]);
  Q1.debtCap=999; Q1.members=7; Q1.other=0; // 管理7人(mgmt=1.4M)
  applyReps(Q1,[12,7,11],{m1:[0.20,0.20,0.20],m2:[0.70,0.70,0.70],m3:[0.10,0.10,0.10]}); // 期2销代30人(薪资4.5M)
- // ---- 第3期 ---- (生产地由第2期"下期生产地点"首值: 雷墨磁1→尼赫鲁, 雷墨磁2→尼赫鲁, 雷墨磁3→尤菲亚)
- Q2.prod.m1={tq:3.6,rs:3.7,rd:1.00,nat:mk([42,38,40],[120000,100000,0],[30,15,20],2)};
- Q2.prod.m2={tq:3.8,rs:2.8,rd:0.95,nat:mk([30,26,33],[300000,80000,750000],[40,15,80],2)};
- Q2.prod.m3={tq:2.6,rs:3.5,rd:0.75,nat:mk([33,31,33],[700000,20000,40000],[0,0,0],0)};
- Q2.debtCap=999; Q2.members=3; // 真实"最高负债限额"=999,999K(未设限); 回购/预测利润/预测收入 该期均留空(0)
+ // ---- 第3期 ---- (官方期3报表·火5经营结果真值; 生产地: 雷1本期零产量/雷2→尼赫鲁/雷3→尤菲亚。价格由"销售收入÷市场销量"反推)
+ Q2.prod.m1={tq:3.6,rs:3.7,rd:1.00,nat:mk([38,38,40],[0,0,0],[30,15,20],0)};        // 雷1本期不生产, 全靠期初存货出货
+ Q2.prod.m2={tq:3.8,rs:2.8,rd:0.95,nat:mk([26,26,30],[300000,80000,750000],[40,15,80],2)};
+ Q2.prod.m3={tq:2.6,rs:3.5,rd:0.75,nat:mk([28,31,33],[700000,20000,40000],[0,0,0],0)};
+ // ✅ 期3市场销量真值(报表"市场销量"): 雷1[尤220465,纳5096,尼175191] 雷2[尤421868,纳10675,尼796913] 雷3[尤424869,纳4788,尼15378]
+ setSold(Q2.prod,[[220465,5096,175191],[421868,10675,796913],[424869,4788,15378]]);
+ // 期3销售份额(报表, 仅存档/展示; 销量已由 setSold 定): 雷1[.167,.004,.260] 雷2[.249,.096,.369] 雷3[.165,.118,.288]
+ setSh(Q2.prod,[[0.167,0.004,0.260],[0.249,0.096,0.369],[0.165,0.118,0.288]]);
+ Q2.debtCap=999; Q2.members=7; Q2.other=100000; // ✅管理7人(mgmt=1.4M)、其他费10万(官方期3损益真值)
  applyReps(Q2,[14,7,12],{m1:[0.3,0.3,0.2],m2:[0.3,0.4,0.7],m3:[0.4,0.3,0.1]});
  Q=[Q0,Q1,Q2,blankQ(),blankQ(),blankQ()];
  cur=0; curP=0;
