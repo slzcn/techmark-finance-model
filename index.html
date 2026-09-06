@@ -530,7 +530,8 @@ const DEMAND={ m1:_dem6(DEMAND_P1.m1,DEMAND_P2.m1,DEMAND_P3.m1), m2:_dem6(DEMAND
 const REAL_RESULTS={ // 官方经营结果精确真值(rev/net 单位=$百万)
  1:{rev:32.742, gm:0.372, net:-0.003, share:0.14, debt:0.38, inv:0.16, roe:0.0,   stock:100, growth:null},
  2:{rev:51.795, gm:0.514, net:8.919,  share:0.21, debt:0.47, inv:0.41, roe:0.129, stock:126, growth:0.581},
- 3:{rev:63.285, gm:0.539, net:10.681, share:0.28, debt:0.34, inv:0.34, roe:0.215, stock:156, growth:0.222} // 期3报表真值(股价156来自期3市场报表·火5=第5组)
+ 3:{rev:63.285, gm:0.539, net:10.681, share:0.28, debt:0.34, inv:0.34, roe:0.215, stock:156, growth:0.222}, // 期3报表真值(股价156来自期3市场报表·火5=第5组)
+ 4:{rev:83.190, gm:0.442, net:10.966, share:null, debt:0.28, inv:0.37, roe:0.181, stock:null, growth:0.314} // 期4报表真值: 收入=三分项之和83,190,369; 净利=应税17,687,856−税6,721,385; 净利率13%✓; 负债23,481,290/资产84,043,831; 应收回收期尤18/纳62/尼21。股价/整体份额照片未读清, 待补
 };
 // ✅ 每产品 6期 × 三地区[尤,纳,尼] 市场理想点[扭矩,电阻]。
 // 期1/期2/期3 = 官方"火星赛区市场报表·市场理想值"逐段精确真值(见期1/期2/期3全景报表照片)。
@@ -1361,13 +1362,14 @@ function renderForecast(){
  const P=calcCumulative(5).perQ;
  let cum=0;
  let h='<thead><tr><th>期</th><th>销售额</th><th>毛利率</th><th>当期利润</th><th>累计利润</th><th>数据性质</th></tr></thead><tbody>';
- for(let q=0;q<6;q++){ const m=P[q]; cum+=m.net;
+ for(let q=0;q<6;q++){ const m=P[q];
   const gm=_simGm(P,q), R=REAL_RESULTS[q+1];
+  cum += R ? R.net*1e6 : m.net; // 累计用官方真实优先, 避免"官方当期利润"与"模型累计"口径打架
   const nat = R ? '<span style="color:#68d391">官方真实</span>' : (q<=2?'已录决策·模型推算':'待填新决策');
   const rev = R ? '$'+R.rev+'M' : '$'+(m.rev/1e6).toFixed(1)+'M';
   const gmv = R ? (R.gm*100).toFixed(0)+'%' : (gm*100).toFixed(0)+'%';
   const net = R ? '$'+R.net.toFixed(1)+'M' : (m.net<0?'-$':'$')+Math.abs(m.net/1e6).toFixed(1)+'M';
-  const cumv= R&&q===1 ? '$'+R.net.toFixed(1)+'M' : (cum<0?'-$':'$')+Math.abs(cum/1e6).toFixed(1)+'M';
+  const cumv= (cum<0?'-$':'$')+Math.abs(cum/1e6).toFixed(1)+'M';
   h+=`<tr${q===cur?' style="background:rgba(246,173,85,.10)"':''}><td>第${q+1}期</td><td>${rev}</td><td>${gmv}</td><td>${net}</td><td>${cumv}</td><td>${nat}</td></tr>`;
  }
  h+='</tbody>'; el.innerHTML=h;
