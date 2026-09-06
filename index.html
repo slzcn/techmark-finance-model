@@ -896,12 +896,12 @@ function calcCumulative(endQ){
  // 总资产 = 固定资产净值(含累计折旧) + 现金 + 应收账款 + 短投 + 存货
  let accDep=perQ.reduce((a,b)=>a+b.dep,0);
  const fixedNet=Math.max(0,fixed-accDep);
- // ✅ 应收账款: 之前这笔"已赚未收"的钱被简化现金流当成现金停在了短投里(致短投虚高、无应收行)。
- //    按报表口径拆出: 停在短投的钱优先归为应收, 剩余才算真短投; 总资产口径不变, 只是科目归位。
+ // ✅ 短期投资=0(期4资产负债表证实): 真实游戏现金钉死$10M、短投恒为0, 多余现金被用于还债等,
+ //    不作为资产留存。此前模型把"现金超$10M部分"虚构成短投, 致总资产虚高(期3曾多算约410万)。
+ // ✅ 应收账款: "已赚未收"单列(=各地区收入×回收期/90), 不再混入现金/短投。
  const recv=r.recv||0;
- const shortRaw=Math.max(0,r.shortInv);
- const shortInv=Math.max(0,shortRaw-recv);      // 扣除应收后的真短期投资
- const totalAsset=fixedNet + r.cashEnd + recv + shortInv + r.invVal;
+ const shortInv=0;                              // 报表口径: 短期投资恒为0
+ const totalAsset=fixedNet + r.cashEnd + recv + r.invVal;
  const eq=equity;
  const roa=r.net/totalAsset, roe=r.net/eq;
  const netMargin=r.rev>0?r.net/r.rev:0, assetTurn=r.rev/totalAsset, lever=totalAsset/eq;
@@ -1119,7 +1119,7 @@ function renderResults(){
   <tr class="sub"><td>· 期末现金($5M-$10M)</td><td>${fmt(C.cash)}</td><td>资产周转</td><td>${C.assetTurn.toFixed(3)}</td></tr>
   <tr class="sub"><td>· 应收账款(各地区收入×回收期/90)</td><td>${fmt(C.recv)}</td><td>权益乘数</td><td>${C.lever.toFixed(3)}</td></tr>
   <tr class="sub"><td>· 存货价值</td><td>${fmt(r.invVal)}</td><td>固定资产净值</td><td>${fmt(C.fixed)}</td></tr>
-  <tr class="sub"><td>· 短期投资(现金超$10M部分,扣应收)</td><td>${fmt(C.shortInv)}</td><td>股东权益(含累计留存)</td><td>${fmt(C.equity)}</td></tr>
+  <tr class="sub"><td>· 短期投资(报表口径恒为0)</td><td>${fmt(C.shortInv)}</td><td>股东权益(含累计留存)</td><td>${fmt(C.equity)}</td></tr>
   <tr><td>债务(本季)</td><td>${fmt(r.debt)}</td><td>资产负债率</td><td>${pct(C.totalAsset>0?r.debt/C.totalAsset:0)}</td></tr>
   <tr class="total"><td>ROE</td><td class="${C.roe>=0?'pos':'neg'}">${pct(C.roe)}</td>
    <td>=净利率×周转×乘数</td><td class="${C.roe>=0?'pos':'neg'}">${pct(C.netMargin*C.assetTurn*C.lever)}</td></tr>
